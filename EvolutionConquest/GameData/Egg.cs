@@ -4,11 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-public class Egg
+public class Egg : SpriteBase
 {
-    public Creature Creature;
-    public int TicksTillHatched;
-    public int ElapsedTicks;
+    public Creature Creature { get; set; }
+    public int TicksTillHatched { get; set; }
+    public int ElapsedTicks { get; set; }
 
     public Egg()
     { }

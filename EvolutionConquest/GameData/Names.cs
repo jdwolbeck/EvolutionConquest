@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 public class Names
 {
-    public List<string> NameList;
+    public List<string> NameList { get; set; }
+
     public Names()
     {
         NameList = new List<string>();

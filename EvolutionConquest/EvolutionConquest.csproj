@@ -50,7 +50,11 @@
     <Compile Include="GameData\Creature.cs" />
     <Compile Include="GameData\CreatureShapeGenerator.cs" />
     <Compile Include="GameData\Egg.cs" />
+    <Compile Include="GameData\EggShapeGenerator.cs" />
+    <Compile Include="GameData\Food.cs" />
+    <Compile Include="GameData\FoodShapeGenerator.cs" />
     <Compile Include="GameData\Names.cs" />
+    <Compile Include="GameData\SpriteBase.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

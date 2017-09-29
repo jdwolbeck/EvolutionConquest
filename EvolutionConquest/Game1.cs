@@ -19,10 +19,10 @@ namespace EvolutionConquest
         private SpriteFont _diagFont;
         //Game variables
         private Texture2D _blackPixel;
-        private Texture2D _borderTexture;
+        private Texture2D _basicCreatureTexture;
+        private Texture2D _foodTexture;
         private Random _rand;
         private CreatureShapeGenerator _creatureGenerator;
-        private Texture2D _basicCreatureTexture;
         private List<Creature> _creatures;
         private List<Egg> _eggs;
         private Names _names;
@@ -63,14 +63,6 @@ namespace EvolutionConquest
             color[0] = Color.Black;
             _blackPixel.SetData(color);
 
-            //_borderTexture = new Texture2D(_graphics.GraphicsDevice, BORDER_WIDTH, Global.WORLD_SIZE);
-            //Color[] colorBorder = new Color[_borderTexture.Width * _borderTexture.Height];
-            //for (int i = 0; i < colorBorder.Length; i++)
-            //{
-            //    colorBorder[i] = Color.Black;
-            //}
-            //_borderTexture.SetData(colorBorder);
-
             _rand = new Random();
             _names = new Names();
             _creatureGenerator = new CreatureShapeGenerator();
@@ -78,12 +70,13 @@ namespace EvolutionConquest
 
             //Generate the Map
             _borders = new Borders();
+            _borders.Texture = _blackPixel;
             _borders.LeftWall = new Vector2(0, 0);
             _borders.RightWall = new Vector2(Global.WORLD_SIZE, 0);
             _borders.TopWall = new Vector2(0, 0);
             _borders.BottomWall = new Vector2(0, Global.WORLD_SIZE);
-            //Anytime the View changes we need to re-calculate the Border WorldPosition
-            _borders.Texture = _borderTexture;
+
+            //Load in random food
 
             //Game start, load in starting population of creatures
             _creatures = new List<Creature>();
@@ -130,7 +123,23 @@ namespace EvolutionConquest
             {
                 for (int i = 0; i < _creatures.Count; i++)
                 {
+                    if (_creatures[i].IsAlive)
+                    {
+                        _creatures[i].AdvanceTick();
 
+                        //Check if the creature has died
+                        if (_creatures[i].ElapsedTicks > _creatures[i].Lifespan)
+                        {
+                            _creatures[i].IsAlive = false;
+                            //Drop all food on the ground
+                        }
+                        //Check if we can lay a new egg
+                        if (_creatures[i].DigestedFood > 0 && _creatures[i].TicksSinceLastEgg >= _creatures[i].EggInterval)
+                        {
+                            _creatures[i].DigestedFood--;
+                            //Lay new egg logic
+                        }
+                    }
                 }
             }
 
@@ -152,10 +161,10 @@ namespace EvolutionConquest
             }
 
             //Draw Borders
-            _spriteBatch.Draw(_blackPixel, new Rectangle((int)_borders.LeftWall.X - BORDER_WIDTH, (int)_borders.LeftWall.Y, BORDER_WIDTH, Global.WORLD_SIZE + BORDER_WIDTH), Color.Black);
-            _spriteBatch.Draw(_blackPixel, new Rectangle((int)_borders.RightWall.X, (int)_borders.RightWall.Y - BORDER_WIDTH, BORDER_WIDTH, Global.WORLD_SIZE + BORDER_WIDTH), Color.Black);
-            _spriteBatch.Draw(_blackPixel, new Rectangle((int)_borders.TopWall.X - BORDER_WIDTH, (int)_borders.TopWall.Y - BORDER_WIDTH, Global.WORLD_SIZE + BORDER_WIDTH, BORDER_WIDTH), Color.Black);
-            _spriteBatch.Draw(_blackPixel, new Rectangle((int)_borders.BottomWall.X - BORDER_WIDTH, (int)_borders.BottomWall.Y, Global.WORLD_SIZE + (BORDER_WIDTH * 2), BORDER_WIDTH), Color.Black);
+            _spriteBatch.Draw(_borders.Texture, new Rectangle((int)_borders.LeftWall.X - BORDER_WIDTH, (int)_borders.LeftWall.Y, BORDER_WIDTH, Global.WORLD_SIZE + BORDER_WIDTH), Color.Black);
+            _spriteBatch.Draw(_borders.Texture, new Rectangle((int)_borders.RightWall.X, (int)_borders.RightWall.Y - BORDER_WIDTH, BORDER_WIDTH, Global.WORLD_SIZE + BORDER_WIDTH), Color.Black);
+            _spriteBatch.Draw(_borders.Texture, new Rectangle((int)_borders.TopWall.X - BORDER_WIDTH, (int)_borders.TopWall.Y - BORDER_WIDTH, Global.WORLD_SIZE + BORDER_WIDTH, BORDER_WIDTH), Color.Black);
+            _spriteBatch.Draw(_borders.Texture, new Rectangle((int)_borders.BottomWall.X - BORDER_WIDTH, (int)_borders.BottomWall.Y, Global.WORLD_SIZE + (BORDER_WIDTH * 2), BORDER_WIDTH), Color.Black);
             _spriteBatch.End();
 
             base.Draw(gameTime);
