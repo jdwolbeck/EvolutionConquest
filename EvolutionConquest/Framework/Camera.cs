@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,7 @@ public class Camera
     // Construct a new Camera class with standard zoom (no scaling)
     public Camera()
     {
-        Zoom = 1.0f;
+        Zoom = 0.5f;
     }
 
     // Centered Position of the Camera in pixels.
@@ -165,8 +166,7 @@ public class Camera
     }
 
     // Move the camera's position based on input
-    public void HandleInput(InputState inputState,
-       PlayerIndex? controllingPlayer)
+    public void HandleInput(InputState inputState, PlayerIndex? controllingPlayer, ref GameData gameData)
     {
         Vector2 cameraMovement = Vector2.Zero;
         float cameraMovementAmount = 1f / Zoom;
@@ -194,6 +194,33 @@ public class Camera
         else if (inputState.IsZoomOut(controllingPlayer))
         {
             AdjustZoom(-0.25f);
+        }
+
+        MouseState mouseState;
+        if (inputState.IsNewLeftMouseClick(out mouseState))
+        {
+            Vector2 worldPosition = Vector2.Transform(new Vector2(mouseState.Position.X, mouseState.Position.Y), Matrix.Invert(Global.Camera.TranslationMatrix));
+
+            bool found = false;
+            for (int i = 0; i < gameData.Creatures.Count; i++)
+            {
+                if (gameData.Creatures[i].Position.X - (gameData.Creatures[i].Texture.Width / 2) < worldPosition.X &&
+                    gameData.Creatures[i].Position.X + (gameData.Creatures[i].Texture.Width / 2) > worldPosition.X &&
+                    gameData.Creatures[i].Position.Y - (gameData.Creatures[i].Texture.Height / 2) < worldPosition.Y &&
+                    gameData.Creatures[i].Position.Y + (gameData.Creatures[i].Texture.Height / 2) > worldPosition.Y)
+                {
+                    //Set the gameData focus to follow
+                    gameData.Focus = gameData.Creatures[i];
+                    found = true;
+                    break;
+                }
+            }
+
+            //If we have focus on a creature remove that focus if we click anywhere other than on a creature
+            if (gameData.Focus != null && !found)
+            {
+                gameData.Focus = null;
+            }
         }
 
         // When using a controller, to match the thumbstick behavior,

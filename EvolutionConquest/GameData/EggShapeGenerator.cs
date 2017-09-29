@@ -64,6 +64,10 @@ public class EggShapeGenerator
         colorList.Add(eggOutlineColor);
         colorList.Add(Color.Transparent);
 
+        colors = colorList.ToArray();
+
+        texture.SetData(colors);
+
         return texture;
     }
 }

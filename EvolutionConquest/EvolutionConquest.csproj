@@ -42,6 +42,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Framework\Camera.cs" />
+    <Compile Include="Framework\CollisionDetection.cs" />
     <Compile Include="Framework\Global.cs" />
     <Compile Include="Framework\InputState.cs" />
     <Compile Include="Framework\Player.cs" />
@@ -53,6 +54,7 @@
     <Compile Include="GameData\EggShapeGenerator.cs" />
     <Compile Include="GameData\Food.cs" />
     <Compile Include="GameData\FoodShapeGenerator.cs" />
+    <Compile Include="Framework\GameData.cs" />
     <Compile Include="GameData\Names.cs" />
     <Compile Include="GameData\SpriteBase.cs" />
     <Compile Include="Program.cs" />

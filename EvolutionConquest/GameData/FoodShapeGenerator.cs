@@ -15,8 +15,8 @@ public class FoodShapeGenerator
     public Texture2D CreateFoodTexture(GraphicsDevice device)
     {
         Texture2D texture;
-        int IMAGE_WIDTH = 6;
-        int IMAGE_HEIGHT = 6;
+        int IMAGE_WIDTH = 4;
+        int IMAGE_HEIGHT = 4;
 
         texture = new Texture2D(device, IMAGE_WIDTH, IMAGE_HEIGHT);
         Color[] colors = new Color[IMAGE_WIDTH * IMAGE_HEIGHT];
@@ -28,12 +28,8 @@ public class FoodShapeGenerator
         colorList.Add(Color.Transparent);
         colorList.Add(foodColor);
         colorList.Add(foodColor);
-        colorList.Add(foodColor);
-        colorList.Add(foodColor);
         colorList.Add(Color.Transparent);
         //Layer2
-        colorList.Add(foodColor);
-        colorList.Add(foodColor);
         colorList.Add(foodColor);
         colorList.Add(foodColor);
         colorList.Add(foodColor);
@@ -43,29 +39,57 @@ public class FoodShapeGenerator
         colorList.Add(foodColor);
         colorList.Add(foodColor);
         colorList.Add(foodColor);
-        colorList.Add(foodColor);
-        colorList.Add(foodColor);
         //Layer4
-        colorList.Add(foodColor);
-        colorList.Add(foodColor);
-        colorList.Add(foodColor);
-        colorList.Add(foodColor);
-        colorList.Add(foodColor);
-        colorList.Add(foodColor);
-        //Layer5
-        colorList.Add(foodColor);
-        colorList.Add(foodColor);
-        colorList.Add(foodColor);
-        colorList.Add(foodColor);
-        colorList.Add(foodColor);
-        colorList.Add(foodColor);
-        //Layer6
         colorList.Add(Color.Transparent);
         colorList.Add(foodColor);
         colorList.Add(foodColor);
-        colorList.Add(foodColor);
-        colorList.Add(foodColor);
         colorList.Add(Color.Transparent);
+        ////Layer1
+        //colorList.Add(Color.Transparent);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(Color.Transparent);
+        ////Layer2
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        ////Layer3
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        ////Layer4
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        ////Layer5
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        ////Layer6
+        //colorList.Add(Color.Transparent);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(foodColor);
+        //colorList.Add(Color.Transparent);
+
+        colors = colorList.ToArray();
+
+        texture.SetData(colors);
 
         return texture;
     }
