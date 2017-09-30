@@ -46,7 +46,7 @@ namespace EvolutionConquest
         {
             _graphics = new GraphicsDeviceManager(this);
             _graphics.PreferredBackBufferHeight = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height - 100;
-            _graphics.PreferredBackBufferWidth = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width;
+            _graphics.PreferredBackBufferWidth = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width - 100;
             _inputState = new InputState();
             _player = new Player();
             _elapsedSecondsSinceTick = 0;
@@ -114,6 +114,15 @@ namespace EvolutionConquest
             {
                 SpawnStartingCreature();
             }
+            Creature creature = new Creature();
+            creature.InitNewCreature(_rand, _names);
+            creature.Texture = _basicCreatureTexture;
+            creature.Position = new Vector2(500, 100);
+            creature.Rotation = MathHelper.ToRadians(-30);
+            _gameData.Creatures.Add(creature);
+
+            Global.Camera.AdjustZoom(500);
+            _gameData.Focus = creature;
         }
         protected override void UnloadContent()
         {
@@ -204,19 +213,22 @@ namespace EvolutionConquest
                         //}
                         if (_gameData.Creatures[i].Direction.X >= 0 && _gameData.Creatures[i].Direction.Y >= 0)
                         {
-                            _gameData.Creatures[i].Rotation = MathHelper.ToRadians((MathHelper.ToDegrees(_gameData.Creatures[i].Rotation) + 90) % 360);
+                            _gameData.Creatures[i].Rotation = (((float)Math.PI * 2) - _gameData.Creatures[i].Rotation);
                         }
                         else if (_gameData.Creatures[i].Direction.X >= 0 && _gameData.Creatures[i].Direction.Y < 0)
                         {
-                            _gameData.Creatures[i].Rotation = MathHelper.ToRadians((MathHelper.ToDegrees(_gameData.Creatures[i].Rotation) + 270) % 360);
+                            _gameData.Creatures[i].Rotation = (((float)Math.PI * 2) - _gameData.Creatures[i].Rotation);
                         }
                         else if (_gameData.Creatures[i].Direction.X < 0 && _gameData.Creatures[i].Direction.Y >= 0)
                         {
-                            _gameData.Creatures[i].Rotation = MathHelper.ToRadians((MathHelper.ToDegrees(_gameData.Creatures[i].Rotation) + 270) % 360);
+                            //_gameData.Creatures[i].Rotation = _gameData.Creatures[i].Rotation - ((float)Math.PI / 2);
+                            //_gameData.Creatures[i].Rotation = ((float)Math.PI / 1) - _gameData.Creatures[i].Rotation - (float)Math.PI;
+                            _gameData.Creatures[i].Rotation = (((float)Math.PI * 2) - _gameData.Creatures[i].Rotation);
                         }
                         else if (_gameData.Creatures[i].Direction.X < 0 && _gameData.Creatures[i].Direction.Y < 0)
                         {
-                            _gameData.Creatures[i].Rotation = MathHelper.ToRadians((MathHelper.ToDegrees(_gameData.Creatures[i].Rotation) + 90) % 360);
+                            //Works
+                            _gameData.Creatures[i].Rotation = (((float)Math.PI * 2) - _gameData.Creatures[i].Rotation);
                         }
                     }
                     if (_gameData.Creatures[i].Position.Y <= 0 || _gameData.Creatures[i].Position.Y >= Global.WORLD_SIZE)
@@ -224,19 +236,19 @@ namespace EvolutionConquest
                         collide = true;
                         if (_gameData.Creatures[i].Direction.X >= 0 && _gameData.Creatures[i].Direction.Y >= 0)
                         {
-                            _gameData.Creatures[i].Rotation = _gameData.Creatures[i].Rotation + MathHelper.ToRadians(270);
+                            _gameData.Creatures[i].Rotation = (((float)Math.PI) - _gameData.Creatures[i].Rotation);
                         }
                         else if (_gameData.Creatures[i].Direction.X >= 0 && _gameData.Creatures[i].Direction.Y < 0)
                         {
-                            _gameData.Creatures[i].Rotation = _gameData.Creatures[i].Rotation + MathHelper.ToRadians(90);
+                            _gameData.Creatures[i].Rotation = (((float)Math.PI) - _gameData.Creatures[i].Rotation);
                         }
                         else if (_gameData.Creatures[i].Direction.X < 0 && _gameData.Creatures[i].Direction.Y >= 0)
                         {
-                            _gameData.Creatures[i].Rotation = _gameData.Creatures[i].Rotation + MathHelper.ToRadians(90);
+                            _gameData.Creatures[i].Rotation = (((float)Math.PI) - _gameData.Creatures[i].Rotation);
                         }
                         else if (_gameData.Creatures[i].Direction.X < 0 && _gameData.Creatures[i].Direction.Y < 0)
                         {
-                            _gameData.Creatures[i].Rotation = _gameData.Creatures[i].Rotation + MathHelper.ToRadians(270);
+                            _gameData.Creatures[i].Rotation = (((float)Math.PI) - _gameData.Creatures[i].Rotation);
                         }
                     }
                     if (collide)

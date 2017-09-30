@@ -169,7 +169,7 @@ public class Camera
     public void HandleInput(InputState inputState, PlayerIndex? controllingPlayer, ref GameData gameData)
     {
         Vector2 cameraMovement = Vector2.Zero;
-        float cameraMovementAmount = 1f / Zoom;
+        float cameraMovementAmount = 0.1f / Zoom;
 
         if (inputState.IsScrollLeft(controllingPlayer))
         {

@@ -48,8 +48,10 @@ public class Creature : SpriteBase
     public float Lifespan { get; set; } //How long the creature lives
     public float ElapsedTicks { get; set; } //How many ticks the creature has been alive
     public float Sight { get; set; } //Allows the creature to adjust path if target is within this many units
+    public float Attraction { get; set; }
     public float Herbavore { get; set; } //This is mainly used to create a Herbavore to Carnivore ratio to determine when the creature has become a Carnivore
     public float Carnivore { get; set; } //Can eat other creatures with Carnivore level of (Carnivore lvl / 2 - 5) or less. This will be the only means of food
+    public float Omnivore { get; set; } //Can eat both creatures and plants
     public float Scavenger { get; set; } //Can eat other creatures eggs including Scavenger eggs. This will be the only means of food
     public float Camo { get; set; } //Hidden from all creatures with a Camo level less than your level
     public float Cloning { get; set; } //Chance for Spontaneous cloning to occur
@@ -97,9 +99,11 @@ public class Creature : SpriteBase
         Lifespan = rand.Next((int)LIFESPAN_INIT_MIN, (int)LIFESPAN_INIT_MAX);
         ElapsedTicks = 0;
         Sight = 0;
+        Attraction = 0;
         Herbavore = rand.Next((int)HERBAVORE_INIT_MIN, (int)HERBAVORE_INIT_MAX);
         Carnivore = 0;
         Scavenger = 0;
+        Omnivore = 0;
         Camo = 0;
         Cloning = 0;
         ColdClimateTolerance = rand.Next((int)COLD_TOLERANCE_INIT_MIN, (int)COLD_TOLERANCE_INIT_MAX);
@@ -146,12 +150,14 @@ public class Creature : SpriteBase
         baby.Speed = Speed + Mutation(rand, 10);
         baby.Lifespan = Lifespan + Mutation(rand, 25);
         baby.Sight = Sight + Mutation(rand, 3);
+        baby.Attraction = Attraction + Mutation(rand, 3);
         baby.Camo = Camo + Mutation(rand, 3);
         baby.Cloning = Cloning + Mutation(rand, 3);
         baby.ColdClimateTolerance = ColdClimateTolerance + Mutation(rand, 10 - HotClimateTolerance);
         baby.HotClimateTolerance = HotClimateTolerance + Mutation(rand, 10 - ColdClimateTolerance);
         baby.Herbavore = Herbavore + Mutation(rand, 15);
         baby.Carnivore = Carnivore + Mutation(rand, 10);
+        baby.Omnivore = Omnivore + Mutation(rand, 10);
         baby.Scavenger = Scavenger + Mutation(rand, 5);
 
         return egg;
@@ -178,6 +184,7 @@ public class Creature : SpriteBase
         info.Add(" ");
         info.Add("Herbavore: " + Herbavore);
         info.Add("Carnivore: " + Carnivore);
+        info.Add("Omnivore: " + Omnivore);
         info.Add("Scavenger: " + Scavenger);
         info.Add(" ");
         info.Add("Speed: " + Speed);
@@ -220,5 +227,34 @@ public class Creature : SpriteBase
         }
 
         return 0f;
+    }
+    private float CalculateIntercept(Creature target)
+    {
+        //Vector2 totarget = target.Position - tower.Position;
+
+        //float a = Vector2.Dot(target.Speed, target.velocity) - (bullet.velocity * bullet.velocity);
+        //float b = 2 * Vector2.Dot(target.Speed, totarget);
+        //float c = Vector2.Dot(totarget, totarget);
+
+        //float p = -b / (2 * a);
+        //float q = (float)Math.Sqrt((b * b) - 4 * a * c) / (2 * a);
+
+        //float t1 = p - q;
+        //float t2 = p + q;
+        //float t;
+
+        //if (t1 > t2 && t2 > 0)
+        //{
+        //    t = t2;
+        //}
+        //else
+        //{
+        //    t = t1;
+        //}
+
+        //Vector aimSpot = target.position + target.velocity * t;
+        //Vector bulletPath = aimSpot - tower.position;
+        //float timeToImpact = bulletPath.Length() / bullet.speed;//speed must be in units per second
+        return 0;
     }
 }
