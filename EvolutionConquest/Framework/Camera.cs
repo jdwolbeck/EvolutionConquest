@@ -170,6 +170,7 @@ public class Camera
     {
         Vector2 cameraMovement = Vector2.Zero;
         float cameraMovementAmount = 0.1f / Zoom;
+        PlayerIndex playerIndex;
 
         if (inputState.IsScrollLeft(controllingPlayer))
         {
@@ -195,6 +196,56 @@ public class Camera
         {
             AdjustZoom(-0.25f);
         }
+        if (inputState.IsNewKeyPress(Keys.PageDown, controllingPlayer, out playerIndex))
+        {
+            if (gameData.FocusIndex > gameData.Creatures.Count - 1)
+            {
+                gameData.FocusIndex = gameData.Creatures.Count - 1;
+            }
+
+            if (gameData.Focus != null && gameData.FocusIndex >= 0)
+            {
+                if (gameData.FocusIndex == 0)
+                {
+                    gameData.FocusIndex = gameData.Creatures.Count - 1;
+                }
+                else
+                {
+                    gameData.FocusIndex--;
+                }
+                gameData.Focus = gameData.Creatures[gameData.FocusIndex];
+            }
+            else
+            {
+                gameData.FocusIndex = 0;
+                gameData.Focus = gameData.Creatures[gameData.FocusIndex];
+            }
+        }
+        else if (inputState.IsNewKeyPress(Keys.PageUp, controllingPlayer, out playerIndex))
+        {
+            if (gameData.FocusIndex > gameData.Creatures.Count - 1)
+            {
+                gameData.FocusIndex = gameData.Creatures.Count - 1;
+            }
+
+            if (gameData.Focus != null && gameData.FocusIndex >= 0)
+            {
+                if (gameData.FocusIndex == gameData.Creatures.Count - 1)
+                {
+                    gameData.FocusIndex = 0;
+                }
+                else
+                {
+                    gameData.FocusIndex++;
+                }
+                gameData.Focus = gameData.Creatures[gameData.FocusIndex];
+            }
+            else
+            {
+                gameData.FocusIndex = 0;
+                gameData.Focus = gameData.Creatures[gameData.FocusIndex];
+            }
+        }
 
         MouseState mouseState;
         if (inputState.IsNewLeftMouseClick(out mouseState))
@@ -214,6 +265,7 @@ public class Camera
                     {
                         //Set the gameData focus to follow
                         gameData.Focus = gameData.Eggs[i].Creature;
+                        gameData.FocusIndex = 0;
                         found = true;
                         break;
                     }
@@ -232,6 +284,7 @@ public class Camera
                     {
                         //Set the gameData focus to follow
                         gameData.Focus = gameData.Creatures[i];
+                        gameData.FocusIndex = i;
                         found = true;
                         break;
                     }

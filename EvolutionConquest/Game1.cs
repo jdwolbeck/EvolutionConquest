@@ -3,6 +3,8 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.Windows.Forms;
+using System.Windows.Forms.DataVisualization.Charting;
 
 namespace EvolutionConquest
 {
@@ -31,16 +33,21 @@ namespace EvolutionConquest
         private Names _names;
         private Borders _borders;
         private List<string> _creatureStats;
+        private int _uniqueSpeciesCount;
         private double _elapsedSecondsSinceTick;
         private double _elapsedTimeSinceFoodGeneration;
         private float _currentTicksPerSecond = 30;
         private float _tickSeconds;
+        private float _elapsedTicksSinceSecondProcessing;
+        private bool _showChart;
+        private int _speciesIdCounter;
+        private System.Windows.Forms.DataVisualization.Charting.Chart _chart;
         //Constants
         private const float TICKS_PER_SECOND = 30;
         private const int BORDER_WIDTH = 10;
-        private const float INIT_FOOD_RATIO = 0.0005f;
+        private const float INIT_FOOD_RATIO = 0.0001f;
         private const float INIT_STARTING_CREATURE_RATIO = 0.00001f;
-        private const float FOOD_GENERATION_INTERVAL_SECONDS = 0.5f;
+        private const float FOOD_GENERATION_INTERVAL_SECONDS = 0.05f;
 
         public Game1()
         {
@@ -51,6 +58,9 @@ namespace EvolutionConquest
             _player = new Player();
             _elapsedSecondsSinceTick = 0;
             _elapsedTimeSinceFoodGeneration = 0;
+            _elapsedTicksSinceSecondProcessing = 0;
+            _showChart = true;
+            _speciesIdCounter = 0;
 
             IsMouseVisible = true;
 
@@ -115,7 +125,8 @@ namespace EvolutionConquest
                 SpawnStartingCreature();
             }
             Creature creature = new Creature();
-            creature.InitNewCreature(_rand, _names);
+            creature.InitNewCreature(_rand, _names, _speciesIdCounter);
+            _speciesIdCounter++;
             creature.Texture = _basicCreatureTexture;
             creature.Position = new Vector2(500, 100);
             creature.Rotation = MathHelper.ToRadians(-30);
@@ -123,6 +134,22 @@ namespace EvolutionConquest
 
             Global.Camera.AdjustZoom(500);
             _gameData.Focus = creature;
+            _gameData.FocusIndex = _gameData.Creatures.Count - 1;
+
+            //Create the chart
+            _chart = new Chart();
+            _chart.Width = 600;
+            _chart.Height = 300;
+            _chart.Location = new System.Drawing.Point(_graphics.PreferredBackBufferWidth - _chart.Width, _graphics.PreferredBackBufferHeight - _chart.Height);
+            _chart.Text = "Test";
+            _chart.Visible = false;
+            ChartArea chartArea1 = new ChartArea();
+            chartArea1.Name = "ChartArea1";
+            _chart.ChartAreas.Add(chartArea1);
+            Legend legend = new Legend();
+            _chart.Legends.Add(legend);
+
+            Control.FromHandle(Window.Handle).Controls.Add(_chart);
         }
         protected override void UnloadContent()
         {
@@ -155,8 +182,10 @@ namespace EvolutionConquest
             //During a tick do all creature processing
             if (tick)
             {
+                _elapsedTicksSinceSecondProcessing++;
+
                 //Check eggs before creatures so that the baby can follow cretaure update logic when born such as eating food
-                for (int i = 0; i < _gameData.Eggs.Count; i++)
+                for (int i = _gameData.Eggs.Count - 1; i >= 0; i--)
                 {
                     _gameData.Eggs[i].AdvanceTick();
                     //Check to egg hatched
@@ -169,31 +198,30 @@ namespace EvolutionConquest
                         _gameData.Eggs.RemoveAt(i);
                     }
                 }
-                for (int i = 0; i < _gameData.Creatures.Count; i++)
+                for (int i = _gameData.Creatures.Count - 1; i >= 0; i--)
                 {
-                    if (_gameData.Creatures[i].IsAlive)
-                    {
-                        _gameData.Creatures[i].AdvanceTick();
+                    _gameData.Creatures[i].AdvanceTick();
 
-                        //Check if the creature has died
-                        if (_gameData.Creatures[i].ElapsedTicks > _gameData.Creatures[i].Lifespan)
+                    //Check if the creature has died
+                    if (_gameData.Creatures[i].ElapsedTicks > _gameData.Creatures[i].Lifespan)
+                    {
+                        _gameData.Creatures[i].IsAlive = false;
+                        _gameData.DeadCreatures.Add(_gameData.Creatures[i]);
+                        //Drop all food on the ground randomly around the area
+                        for (int k = 0; k < _gameData.Creatures[k].UndigestedFood; k++)
                         {
-                            _gameData.Creatures[i].IsAlive = false;
-                            //Drop all food on the ground randomly around the area
-                            for (int k = 0; k < _gameData.Creatures[k].UndigestedFood; k++)
-                            {
-                                SpawnFood(new Vector2(_gameData.Creatures[k].Position.X + _rand.Next(-5, 5), _gameData.Creatures[k].Position.Y + _rand.Next(-5, 5)));
-                            }
+                            SpawnFood(new Vector2(_gameData.Creatures[k].Position.X + _rand.Next(-5, 5), _gameData.Creatures[k].Position.Y + _rand.Next(-5, 5)));
                         }
-                        //Check if we can lay a new egg
-                        if (_gameData.Creatures[i].DigestedFood > 0 && _gameData.Creatures[i].TicksSinceLastEgg >= _gameData.Creatures[i].EggInterval)
-                        {
-                            _gameData.Creatures[i].DigestedFood--; //Costs one digested food to lay an egg
-                            Egg egg = _gameData.Creatures[i].LayEgg(_rand);
-                            //TODO handle this maybe in the Creature class
-                            egg.Texture = _eggTexture;
-                            _gameData.Eggs.Add(egg); //Add the new egg to gameData, the LayEgg function will calculate the Mutations
-                        }
+                        _gameData.Creatures.RemoveAt(i);
+                    }
+                    //Check if we can lay a new egg
+                    if (_gameData.Creatures[i].DigestedFood > 0 && _gameData.Creatures[i].TicksSinceLastEgg >= _gameData.Creatures[i].EggInterval)
+                    {
+                        _gameData.Creatures[i].DigestedFood--; //Costs one digested food to lay an egg
+                        Egg egg = _gameData.Creatures[i].LayEgg(_rand);
+                        //TODO handle this maybe in the Creature class
+                        egg.Texture = _eggTexture;
+                        _gameData.Eggs.Add(egg); //Add the new egg to gameData, the LayEgg function will calculate the Mutations
                     }
                 }
             }
@@ -266,6 +294,37 @@ namespace EvolutionConquest
                         _gameData.Creatures[i].Position += _gameData.Creatures[i].Direction * ((_gameData.Creatures[i].Speed / 10f) * (_currentTicksPerSecond / TICKS_PER_SECOND)) * TICKS_PER_SECOND * (float)gameTime.ElapsedGameTime.TotalSeconds;
                     }
                 }
+
+                //Every second processing only when it is not a TICK
+                if (_elapsedTicksSinceSecondProcessing >= TICKS_PER_SECOND * 5)
+                {
+                    _elapsedTicksSinceSecondProcessing = 0;
+
+                    //For the HUD calculate the unique number of species. Do this in the "Per Second" code so that it is not a big performance hit
+                    _uniqueSpeciesCount = _gameData.GetUniqueSpeciesCount();
+
+                    //Generate Graph data
+                    if (!_chart.Visible && _gameData.ChartDataTop.Count > 0)
+                    {
+                        _chart.Visible = true;
+                    }
+                    _gameData.CalculateChartData(); //This will populat the Chart Data in _gameData
+                    _chart.Series.Clear();
+                    for (int i = 0; i < _gameData.ChartDataTop.Count; i++)
+                    {
+                        //string name = _gameData.ChartDataTop[i].Name + "(" + _gameData.ChartDataTop[i].Id + ")";
+                        string name = _gameData.ChartDataTop[i].Name + "(" + _gameData.ChartDataTop[i].CountsOverTime[_gameData.ChartDataTop[i].CountsOverTime.Count - 1] + ")";
+
+                        _chart.Series.Add(name);
+                        _chart.Series[name].XValueType = ChartValueType.Int32;
+                        _chart.Series[name].ChartType = SeriesChartType.StackedArea100;
+                        _chart.Series[name].BorderWidth = 3;
+                        for (int k = 0; k < _gameData.ChartDataTop[i].CountsOverTime.Count; k++)
+                        {
+                            _chart.Series[name].Points.AddXY(k, _gameData.ChartDataTop[i].CountsOverTime[k]);
+                        }
+                    }
+                }
             }
 
             //This must be after movement caluclations occur for the creatures otherwise the camera will glitch back and forth
@@ -313,7 +372,6 @@ namespace EvolutionConquest
             //=== DRAW HUD INFORMATION ===
             _spriteBatch.Begin();
             //Draw Creature information
-            //Draw panel boxes
             if (_gameData.Focus != null)
             {
                 int startingX = 10, startingY = 100, borderDepth = 5, width = 0, height = 0, textHeight = 0, textSpacing = 5;
@@ -333,6 +391,9 @@ namespace EvolutionConquest
                     currentY += textHeight + textSpacing;
                 }
             }
+            //Draw map statistics
+            string mapStats = "Alive Creatures: " + _gameData.Creatures.Count + ", Unique Species: " + _uniqueSpeciesCount + ", Dead Creatures: " + _gameData.DeadCreatures.Count + ", Eggs: " + _gameData.Eggs.Count + ", Map Food: " + _gameData.Food.Count;
+            _spriteBatch.DrawString(_diagFont, mapStats, new Vector2((_graphics.PreferredBackBufferWidth / 2) - (_diagFont.MeasureString(mapStats).X / 2), 10), Color.Black);
             _spriteBatch.End();
 
             base.Draw(gameTime);
@@ -355,10 +416,12 @@ namespace EvolutionConquest
         private void SpawnStartingCreature()
         {
             Creature creature = new Creature();
-            creature.InitNewCreature(_rand, _names);
+            creature.InitNewCreature(_rand, _names, _speciesIdCounter);
             creature.Texture = _basicCreatureTexture;
             creature.Position = new Vector2(_rand.Next(creature.Texture.Width, Global.WORLD_SIZE - creature.Texture.Width), _rand.Next(creature.Texture.Height, Global.WORLD_SIZE - creature.Texture.Height));
             _gameData.Creatures.Add(creature);
+
+            _speciesIdCounter++;
         }
     }
 }

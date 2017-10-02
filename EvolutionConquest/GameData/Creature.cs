@@ -12,7 +12,12 @@ public class Creature : SpriteBase
     private float _rotation;
     int _undigestedFood;
 
+    /// <summary>
+    /// Adding new Properties make sure to Add to the following: Init, LayEgg, IsSame
+    /// </summary>
+
     public bool IsAlive { get; set; }
+    public int SpeciesId { get; set; } //Unique ID for species
     public string Species { get; set; } //Random name assigned to specied
     public string SpeciesStrain { get; set; } //This will keep track of specific strains within a species
     public string BabySpeciesStrainCounter { get; set; } //This is used for assigning babies with their strain
@@ -71,9 +76,9 @@ public class Creature : SpriteBase
     public float ColdClimateTolerance { get; set; } //How well the creature can handle cold parts of the map before needing to move to neutral
     public float HotClimateTolerance { get; set; } //How well the creature can handle hot parts of the map before needing to move to neutral
 
-    public const float EGG_INTERVAL_INIT_MIN = 100;
+    public const float EGG_INTERVAL_INIT_MIN = 400;
     public const float EGG_INTERVAL_INIT_MAX = 800;
-    public const float EGG_INCUBATION_INIT_MIN = 100;
+    public const float EGG_INCUBATION_INIT_MIN = 300;
     public const float EGG_INCUBATION_INIT_MAX = 800;
     public const float FOOD_DIGESTION_INIT_MIN = 50;
     public const float FOOD_DIGESTION_INIT_MAX = 250;
@@ -93,9 +98,10 @@ public class Creature : SpriteBase
     {
     }
 
-    public void InitNewCreature(Random rand, Names names)
+    public void InitNewCreature(Random rand, Names names, int speciesId)
     {
         IsAlive = true;
+        SpeciesId = speciesId;
         Species = names.GetRandomName(rand);
         SpeciesStrain = String.Empty;
         BabySpeciesStrainCounter = "A";
@@ -131,7 +137,8 @@ public class Creature : SpriteBase
     {
         ElapsedTicks++;
         TicksSinceLastEgg++;
-        TicksSinceLastDigestedFood++;
+        if(UndigestedFood > 0) //only allow digestion once the a food has been eaten
+            TicksSinceLastDigestedFood++;
 
         if (UndigestedFood > 0 && TicksSinceLastDigestedFood >= FoodDigestion)
         {
@@ -151,8 +158,8 @@ public class Creature : SpriteBase
         baby.IsAlive = true;
         baby.Rotation = MathHelper.ToRadians(rand.Next(0, 360));
         baby.Position = Position;
-        baby.Species = Species;
-        baby.SpeciesStrain = SpeciesStrain + " " + BabySpeciesStrainCounter;
+        baby.SpeciesId = SpeciesId;
+        baby.Species = Species;        
         BabySpeciesStrainCounter = Global.GetNextBase26(BabySpeciesStrainCounter);
         baby.BabySpeciesStrainCounter = "A";
         baby.Generation = Generation + 1;
@@ -165,12 +172,12 @@ public class Creature : SpriteBase
 
         //Mutations
         baby.EggCamo = EggCamo + Mutation(rand, 5);
-        baby.EggIncubation = EggIncubation + Mutation(rand, 25);
-        baby.EggInterval = EggInterval + Mutation(rand, 25);
+        baby.EggIncubation = EggIncubation + (Mutation(rand, 25) * 10);
+        baby.EggInterval = EggInterval + (Mutation(rand, 25) * 10);
         baby.EggToxicity = EggToxicity + Mutation(rand, 5);
-        baby.FoodDigestion = FoodDigestion + Mutation(rand, 25);
+        baby.FoodDigestion = FoodDigestion + (Mutation(rand, 25) * 10);
         baby.Speed = Speed + Mutation(rand, 10);
-        baby.Lifespan = Lifespan + Mutation(rand, 25);
+        baby.Lifespan = Lifespan + (Mutation(rand, 25) * 10);
         baby.Energy = Energy; //No mutation chance on energy
         baby.Sight = Sight + Mutation(rand, 3);
         baby.Attraction = Attraction + Mutation(rand, 3);
@@ -182,6 +189,35 @@ public class Creature : SpriteBase
         baby.Carnivore = Carnivore + Mutation(rand, 10);
         baby.Omnivore = Omnivore + Mutation(rand, 10);
         baby.Scavenger = Scavenger + Mutation(rand, 5);
+
+        //Only iterate the Species/Strain if something that can Mutate has changed
+        if (!IsSameAs(baby))
+        {
+            if (SpeciesStrain.Replace(" ", "").Length > 30) //New Species once the Strain goes past 30 different strains
+            {
+                int romanNumeralIndex = baby.Species.IndexOf(' ');
+                if (romanNumeralIndex > 0) //Increment Roman numeral of we Detect a space
+                {
+                    string romanNumeral = baby.Species.Substring(romanNumeralIndex + 1);
+                    romanNumeral = Roman.To(Roman.From(romanNumeral) + 1);
+
+                    baby.Species = baby.Species.Substring(0, romanNumeralIndex) + " " + romanNumeral;
+                }
+                else
+                {
+                    baby.Species = baby.Species + " II";
+                }
+                baby.SpeciesStrain = String.Empty;
+            }
+            else
+            {
+                baby.SpeciesStrain = SpeciesStrain + " " + BabySpeciesStrainCounter;
+            }
+        }
+        else
+        {
+            baby.SpeciesStrain = SpeciesStrain;
+        }
 
         egg.Position = Position;
         egg.ElapsedTicks = 0;
@@ -307,5 +343,20 @@ public class Creature : SpriteBase
         //Vector bulletPath = aimSpot - tower.position;
         //float timeToImpact = bulletPath.Length() / bullet.speed;//speed must be in units per second
         return 0;
+    }
+    private bool IsSameAs(Creature compareCreature)
+    {
+        if (EggCamo != compareCreature.EggCamo || EggInterval != compareCreature.EggInterval || 
+            EggIncubation != compareCreature.EggIncubation || EggToxicity != compareCreature.EggToxicity || 
+            FoodDigestion != compareCreature.FoodDigestion || Speed != compareCreature.Speed || 
+            Lifespan != compareCreature.Lifespan || Sight != compareCreature.Sight || 
+            Attraction != compareCreature.Attraction || Camo != compareCreature.Camo || 
+            Cloning != compareCreature.Cloning || HotClimateTolerance != compareCreature.HotClimateTolerance || 
+            ColdClimateTolerance != compareCreature.ColdClimateTolerance || Herbavore != compareCreature.Herbavore || 
+            Carnivore != compareCreature.Carnivore || Scavenger != compareCreature.Scavenger || 
+            Omnivore != compareCreature.Omnivore)
+            return false;
+        
+        return true;
     }
 }
