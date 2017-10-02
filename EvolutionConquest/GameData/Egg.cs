@@ -12,4 +12,9 @@ public class Egg : SpriteBase
 
     public Egg()
     { }
+
+    public void AdvanceTick()
+    {
+        ElapsedTicks++;
+    }
 }

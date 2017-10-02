@@ -38,15 +38,15 @@ namespace EvolutionConquest
         //Constants
         private const float TICKS_PER_SECOND = 30;
         private const int BORDER_WIDTH = 10;
-        private const float INIT_FOOD_RATIO = 0.0001f;
-        private const float INIT_STARTING_CREATURE_RATIO = 0.00005f;
+        private const float INIT_FOOD_RATIO = 0.0005f;
+        private const float INIT_STARTING_CREATURE_RATIO = 0.00001f;
         private const float FOOD_GENERATION_INTERVAL_SECONDS = 0.5f;
 
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
-            _graphics.PreferredBackBufferHeight = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height - 100;
-            _graphics.PreferredBackBufferWidth = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width - 100;
+            _graphics.PreferredBackBufferHeight = 900;
+            _graphics.PreferredBackBufferWidth = 1600;
             _inputState = new InputState();
             _player = new Player();
             _elapsedSecondsSinceTick = 0;
@@ -137,7 +137,9 @@ namespace EvolutionConquest
             }
             else
             {
+                _inputState.Update();
                 _player.HandleInput(_inputState);
+                Global.Camera.HandleInput(_inputState, PlayerIndex.One, ref _gameData);
             }
 
             _tickSeconds = 1 / _currentTicksPerSecond;
@@ -153,6 +155,20 @@ namespace EvolutionConquest
             //During a tick do all creature processing
             if (tick)
             {
+                //Check eggs before creatures so that the baby can follow cretaure update logic when born such as eating food
+                for (int i = 0; i < _gameData.Eggs.Count; i++)
+                {
+                    _gameData.Eggs[i].AdvanceTick();
+                    //Check to egg hatched
+                    if (_gameData.Eggs[i].ElapsedTicks >= _gameData.Eggs[i].TicksTillHatched)
+                    {
+                        //TODO change texture based on creature properties dynamically
+                        //Assign texture to the creature
+                        _gameData.Eggs[i].Creature.Texture = _basicCreatureTexture;
+                        _gameData.Creatures.Add(_gameData.Eggs[i].Creature);
+                        _gameData.Eggs.RemoveAt(i);
+                    }
+                }
                 for (int i = 0; i < _gameData.Creatures.Count; i++)
                 {
                     if (_gameData.Creatures[i].IsAlive)
@@ -172,8 +188,11 @@ namespace EvolutionConquest
                         //Check if we can lay a new egg
                         if (_gameData.Creatures[i].DigestedFood > 0 && _gameData.Creatures[i].TicksSinceLastEgg >= _gameData.Creatures[i].EggInterval)
                         {
-                            _gameData.Creatures[i].DigestedFood--;
-                            //Lay new egg logic
+                            _gameData.Creatures[i].DigestedFood--; //Costs one digested food to lay an egg
+                            Egg egg = _gameData.Creatures[i].LayEgg(_rand);
+                            //TODO handle this maybe in the Creature class
+                            egg.Texture = _eggTexture;
+                            _gameData.Eggs.Add(egg); //Add the new egg to gameData, the LayEgg function will calculate the Mutations
                         }
                     }
                 }
@@ -191,69 +210,50 @@ namespace EvolutionConquest
                 //Border Collision Detection
                 for (int i = 0; i < _gameData.Creatures.Count; i++)
                 {
-                    bool collide = false;
-                    if (_gameData.Creatures[i].Position.X <= 0 || _gameData.Creatures[i].Position.X >= Global.WORLD_SIZE)
+                    if (_gameData.Creatures[i].Position.X - (_gameData.Creatures[i].Texture.Width / 2) <= 0 || _gameData.Creatures[i].Position.X + (_gameData.Creatures[i].Texture.Width / 2) >= Global.WORLD_SIZE)
                     {
-                        collide = true;
-                        //if (_gameData.Creatures[i].Direction.X >= 0 && _gameData.Creatures[i].Direction.Y >= 0)
-                        //{
-                        //    _gameData.Creatures[i].Rotation = MathHelper.ToDegrees(_gameData.Creatures[i].Rotation) + MathHelper.ToRadians(90);
-                        //}
-                        //else if (_gameData.Creatures[i].Direction.X >= 0 && _gameData.Creatures[i].Direction.Y < 0)
-                        //{
-                        //    _gameData.Creatures[i].Rotation = _gameData.Creatures[i].Rotation + MathHelper.ToRadians(270);
-                        //}
-                        //else if (_gameData.Creatures[i].Direction.X < 0 && _gameData.Creatures[i].Direction.Y >= 0)
-                        //{
-                        //    _gameData.Creatures[i].Rotation = _gameData.Creatures[i].Rotation + MathHelper.ToRadians(270);
-                        //}
-                        //else if (_gameData.Creatures[i].Direction.X < 0 && _gameData.Creatures[i].Direction.Y < 0)
-                        //{
-                        //    _gameData.Creatures[i].Rotation = _gameData.Creatures[i].Rotation + MathHelper.ToRadians(90);
-                        //}
-                        if (_gameData.Creatures[i].Direction.X >= 0 && _gameData.Creatures[i].Direction.Y >= 0)
+                        if (_gameData.Creatures[i].Direction.X >= 0 && _gameData.Creatures[i].Direction.Y >= 0 || 
+                            _gameData.Creatures[i].Direction.X >= 0 && _gameData.Creatures[i].Direction.Y < 0 ||
+                            _gameData.Creatures[i].Direction.X < 0 && _gameData.Creatures[i].Direction.Y >= 0 ||
+                            _gameData.Creatures[i].Direction.X < 0 && _gameData.Creatures[i].Direction.Y < 0)
                         {
-                            _gameData.Creatures[i].Rotation = (((float)Math.PI * 2) - _gameData.Creatures[i].Rotation);
-                        }
-                        else if (_gameData.Creatures[i].Direction.X >= 0 && _gameData.Creatures[i].Direction.Y < 0)
-                        {
-                            _gameData.Creatures[i].Rotation = (((float)Math.PI * 2) - _gameData.Creatures[i].Rotation);
-                        }
-                        else if (_gameData.Creatures[i].Direction.X < 0 && _gameData.Creatures[i].Direction.Y >= 0)
-                        {
-                            //_gameData.Creatures[i].Rotation = _gameData.Creatures[i].Rotation - ((float)Math.PI / 2);
-                            //_gameData.Creatures[i].Rotation = ((float)Math.PI / 1) - _gameData.Creatures[i].Rotation - (float)Math.PI;
-                            _gameData.Creatures[i].Rotation = (((float)Math.PI * 2) - _gameData.Creatures[i].Rotation);
-                        }
-                        else if (_gameData.Creatures[i].Direction.X < 0 && _gameData.Creatures[i].Direction.Y < 0)
-                        {
-                            //Works
                             _gameData.Creatures[i].Rotation = (((float)Math.PI * 2) - _gameData.Creatures[i].Rotation);
                         }
                     }
-                    if (_gameData.Creatures[i].Position.Y <= 0 || _gameData.Creatures[i].Position.Y >= Global.WORLD_SIZE)
+                    if (_gameData.Creatures[i].Position.Y - (_gameData.Creatures[i].Texture.Height / 2) <= 0 || _gameData.Creatures[i].Position.Y + (_gameData.Creatures[i].Texture.Height / 2) >= Global.WORLD_SIZE)
                     {
-                        collide = true;
-                        if (_gameData.Creatures[i].Direction.X >= 0 && _gameData.Creatures[i].Direction.Y >= 0)
-                        {
-                            _gameData.Creatures[i].Rotation = (((float)Math.PI) - _gameData.Creatures[i].Rotation);
-                        }
-                        else if (_gameData.Creatures[i].Direction.X >= 0 && _gameData.Creatures[i].Direction.Y < 0)
-                        {
-                            _gameData.Creatures[i].Rotation = (((float)Math.PI) - _gameData.Creatures[i].Rotation);
-                        }
-                        else if (_gameData.Creatures[i].Direction.X < 0 && _gameData.Creatures[i].Direction.Y >= 0)
-                        {
-                            _gameData.Creatures[i].Rotation = (((float)Math.PI) - _gameData.Creatures[i].Rotation);
-                        }
-                        else if (_gameData.Creatures[i].Direction.X < 0 && _gameData.Creatures[i].Direction.Y < 0)
+                        if (_gameData.Creatures[i].Direction.X >= 0 && _gameData.Creatures[i].Direction.Y >= 0 ||
+                            _gameData.Creatures[i].Direction.X >= 0 && _gameData.Creatures[i].Direction.Y < 0 ||
+                            _gameData.Creatures[i].Direction.X < 0 && _gameData.Creatures[i].Direction.Y >= 0 ||
+                            _gameData.Creatures[i].Direction.X < 0 && _gameData.Creatures[i].Direction.Y < 0)
                         {
                             _gameData.Creatures[i].Rotation = (((float)Math.PI) - _gameData.Creatures[i].Rotation);
                         }
                     }
-                    if (collide)
-                    {
 
+                    //Food collision
+                    bool creatureBoundsCalculated = false;
+                    for (int k = 0; k < _gameData.Food.Count; k++)
+                    {
+                        if (Vector2.Distance(_gameData.Food[k].Position, _gameData.Creatures[i].Position) <= _gameData.Creatures[i].TextureCollideDistance)
+                        {
+                            if (!creatureBoundsCalculated) //Only calculate the bounds for the creature once
+                            {
+                                creatureBoundsCalculated = true;
+                                _gameData.Creatures[i].CalculateBounds();
+                            }
+                            if(_gameData.Creatures[i].Bounds.Intersects(_gameData.Food[k].Bounds))
+                            {
+                                _gameData.Creatures[i].UndigestedFood++;
+                                _gameData.Food.RemoveAt(k);
+                            }
+                        }
+                    }
+
+                    if (_gameData.Creatures[i].IsAlive)
+                    {
+                        //Move the creature
+                        _gameData.Creatures[i].Position += _gameData.Creatures[i].Direction * ((_gameData.Creatures[i].Speed / 10f) * (_currentTicksPerSecond / TICKS_PER_SECOND)) * TICKS_PER_SECOND * (float)gameTime.ElapsedGameTime.TotalSeconds;
                     }
                 }
 
@@ -268,8 +268,7 @@ namespace EvolutionConquest
                 }
             }
 
-            _inputState.Update();
-            Global.Camera.HandleInput(_inputState, PlayerIndex.One, ref _gameData);
+            //This must be after movement caluclations occur for the creatures otherwise the camera will glitch back and forth
             if (_gameData.Focus != null)
             {
                 Global.Camera.CenterOn(_gameData.Focus.Position);
@@ -283,10 +282,16 @@ namespace EvolutionConquest
 
             // === DRAW WITHIN THE WORLD ===
             _spriteBatch.Begin(SpriteSortMode.BackToFront, BlendState.AlphaBlend, null, null, null, null, Global.Camera.TranslationMatrix);
-            //Draw food
+            //Draw Food
             for(int i = 0; i < _gameData.Food.Count; i++)
             {
                 _spriteBatch.Draw(_gameData.Food[i].Texture, _gameData.Food[i].Position, null, Color.White, 0f, _gameData.Food[i].Origin, 1f, SpriteEffects.None, 1f);
+            }
+
+            //Draw Eggs
+            for (int i = 0; i < _gameData.Eggs.Count; i++)
+            {
+                _spriteBatch.Draw(_gameData.Eggs[i].Texture, _gameData.Eggs[i].Position, null, Color.White, 0f, _gameData.Eggs[i].Origin, 1f, SpriteEffects.None, 1f);
             }
 
             //Draw Creatures
@@ -343,6 +348,7 @@ namespace EvolutionConquest
             Food food = new Food();
             food.Texture = _foodTexture;
             food.Position = position;
+            food.CalculateBounds();
 
             _gameData.Food.Add(food);
         }

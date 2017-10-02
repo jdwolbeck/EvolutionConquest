@@ -202,17 +202,39 @@ public class Camera
             Vector2 worldPosition = Vector2.Transform(new Vector2(mouseState.Position.X, mouseState.Position.Y), Matrix.Invert(Global.Camera.TranslationMatrix));
 
             bool found = false;
-            for (int i = 0; i < gameData.Creatures.Count; i++)
+
+            if (!found)
             {
-                if (gameData.Creatures[i].Position.X - (gameData.Creatures[i].Texture.Width / 2) < worldPosition.X &&
-                    gameData.Creatures[i].Position.X + (gameData.Creatures[i].Texture.Width / 2) > worldPosition.X &&
-                    gameData.Creatures[i].Position.Y - (gameData.Creatures[i].Texture.Height / 2) < worldPosition.Y &&
-                    gameData.Creatures[i].Position.Y + (gameData.Creatures[i].Texture.Height / 2) > worldPosition.Y)
+                for (int i = 0; i < gameData.Eggs.Count; i++)
                 {
-                    //Set the gameData focus to follow
-                    gameData.Focus = gameData.Creatures[i];
-                    found = true;
-                    break;
+                    if (gameData.Eggs[i].Position.X - (gameData.Eggs[i].Texture.Width / 2) < worldPosition.X &&
+                    gameData.Eggs[i].Position.X + (gameData.Eggs[i].Texture.Width / 2) > worldPosition.X &&
+                    gameData.Eggs[i].Position.Y - (gameData.Eggs[i].Texture.Height / 2) < worldPosition.Y &&
+                    gameData.Eggs[i].Position.Y + (gameData.Eggs[i].Texture.Height / 2) > worldPosition.Y)
+                    {
+                        //Set the gameData focus to follow
+                        gameData.Focus = gameData.Eggs[i].Creature;
+                        found = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!found)
+            {
+                for (int i = 0; i < gameData.Creatures.Count; i++)
+                {
+                    //If the object is not an egg help with clicking by expanding the radius
+                    if (gameData.Creatures[i].Position.X - (gameData.Creatures[i].Texture.Width / 1.5) < worldPosition.X &&
+                        gameData.Creatures[i].Position.X + (gameData.Creatures[i].Texture.Width / 1.5) > worldPosition.X &&
+                        gameData.Creatures[i].Position.Y - (gameData.Creatures[i].Texture.Height / 1.5) < worldPosition.Y &&
+                        gameData.Creatures[i].Position.Y + (gameData.Creatures[i].Texture.Height / 1.5) > worldPosition.Y)
+                    {
+                        //Set the gameData focus to follow
+                        gameData.Focus = gameData.Creatures[i];
+                        found = true;
+                        break;
+                    }
                 }
             }
 

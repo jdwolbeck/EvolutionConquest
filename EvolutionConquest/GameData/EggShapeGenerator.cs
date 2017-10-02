@@ -22,12 +22,12 @@ public class EggShapeGenerator
 
         List<Color> colorList = new List<Color>();
         //Layer1
-        colorList.Add(Color.Transparent);
         colorList.Add(eggOutlineColor);
         colorList.Add(eggOutlineColor);
         colorList.Add(eggOutlineColor);
         colorList.Add(eggOutlineColor);
-        colorList.Add(Color.Transparent);
+        colorList.Add(eggOutlineColor);
+        colorList.Add(eggOutlineColor);
         //Layer2
         colorList.Add(eggOutlineColor);
         colorList.Add(eggOutlineColor);
@@ -57,12 +57,12 @@ public class EggShapeGenerator
         colorList.Add(eggOutlineColor);
         colorList.Add(eggOutlineColor);
         //Layer6
-        colorList.Add(Color.Transparent);
         colorList.Add(eggOutlineColor);
         colorList.Add(eggOutlineColor);
         colorList.Add(eggOutlineColor);
         colorList.Add(eggOutlineColor);
-        colorList.Add(Color.Transparent);
+        colorList.Add(eggOutlineColor);
+        colorList.Add(eggOutlineColor);
 
         colors = colorList.ToArray();
 
