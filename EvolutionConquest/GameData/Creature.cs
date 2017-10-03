@@ -13,7 +13,7 @@ public class Creature : SpriteBase
     int _undigestedFood;
 
     /// <summary>
-    /// Adding new Properties make sure to Add to the following: Init, LayEgg, IsSame
+    /// Adding new Properties make sure to Add to the following: Init, LayEgg, IsSameAs, ZeroOutNegativeValues
     /// </summary>
 
     public bool IsAlive { get; set; }
@@ -113,7 +113,7 @@ public class Creature : SpriteBase
         SpeciesStrain = String.Empty;
         BabySpeciesStrainCounter = "A";
         Generation = 0;
-        Rotation = MathHelper.ToRadians(rand.Next(0,360));
+        Rotation = MathHelper.ToRadians(rand.Next(0, 360));
         UndigestedFood = 0;
         DigestedFood = 0;
         FoodDigestion = rand.Next((int)FOOD_DIGESTION_INIT_MIN, (int)FOOD_DIGESTION_INIT_MAX);
@@ -121,7 +121,7 @@ public class Creature : SpriteBase
         TicksSinceLastDigestedFood = 0;
         TicksSinceLastEgg = 0;
         EggInterval = rand.Next((int)EGG_INTERVAL_INIT_MIN, (int)EGG_INTERVAL_INIT_MAX);
-        EggIncubation = rand.Next((int)EGG_INCUBATION_INIT_MIN,(int)EGG_INCUBATION_INIT_MAX);
+        EggIncubation = rand.Next((int)EGG_INCUBATION_INIT_MIN, (int)EGG_INCUBATION_INIT_MAX);
         EggsCreated = 0;
         EggCamo = 0;
         EggToxicity = 0;
@@ -144,7 +144,7 @@ public class Creature : SpriteBase
     {
         ElapsedTicks++;
         TicksSinceLastEgg++;
-        if(UndigestedFood > 0) //only allow digestion once the a food has been eaten
+        if (UndigestedFood > 0) //only allow digestion once the a food has been eaten
             TicksSinceLastDigestedFood++;
 
         if (UndigestedFood > 0 && TicksSinceLastDigestedFood >= FoodDigestion)
@@ -170,7 +170,7 @@ public class Creature : SpriteBase
         baby.Rotation = MathHelper.ToRadians(rand.Next(0, 360));
         baby.Position = Position;
         baby.SpeciesId = SpeciesId;
-        baby.Species = Species;        
+        baby.Species = Species;
         baby.BabySpeciesStrainCounter = "A";
         baby.Generation = Generation + 1;
         baby.UndigestedFood = 0;
@@ -240,6 +240,8 @@ public class Creature : SpriteBase
         {
             baby.SpeciesStrain = SpeciesStrain;
         }
+
+        ZeroOutNegativeValues(ref baby);
 
         egg.Position = Position;
         egg.ElapsedTicks = 0;
@@ -321,7 +323,7 @@ public class Creature : SpriteBase
         info.Add("Hot Tolerance: " + HotClimateTolerance);
         info.Add(" ");
         info.Add("Species ID: " + SpeciesId);
-        info.Add("Position: {X:" + ((int)Position.X).ToString().PadLeft(4,' ') + ", Y:" + ((int)Position.Y).ToString().PadLeft(4, ' '));
+        info.Add("Position: {X:" + ((int)Position.X).ToString().PadLeft(4, ' ') + ", Y:" + ((int)Position.Y).ToString().PadLeft(4, ' '));
         info.Add("Direction: " + Direction);
         info.Add("Rotation: " + Rotation);
 
@@ -386,17 +388,17 @@ public class Creature : SpriteBase
     }
     private bool IsSameAs(Creature compareCreature)
     {
-        if (EggCamo != compareCreature.EggCamo || EggInterval != compareCreature.EggInterval || 
-            EggIncubation != compareCreature.EggIncubation || EggToxicity != compareCreature.EggToxicity || 
-            FoodDigestion != compareCreature.FoodDigestion || Speed != compareCreature.Speed || 
-            Lifespan != compareCreature.Lifespan || Sight != compareCreature.Sight || 
-            Attraction != compareCreature.Attraction || Camo != compareCreature.Camo || 
-            Cloning != compareCreature.Cloning || HotClimateTolerance != compareCreature.HotClimateTolerance || 
-            ColdClimateTolerance != compareCreature.ColdClimateTolerance || Herbavore != compareCreature.Herbavore || 
-            Carnivore != compareCreature.Carnivore || Scavenger != compareCreature.Scavenger || 
+        if (EggCamo != compareCreature.EggCamo || EggInterval != compareCreature.EggInterval ||
+            EggIncubation != compareCreature.EggIncubation || EggToxicity != compareCreature.EggToxicity ||
+            FoodDigestion != compareCreature.FoodDigestion || Speed != compareCreature.Speed ||
+            Lifespan != compareCreature.Lifespan || Sight != compareCreature.Sight ||
+            Attraction != compareCreature.Attraction || Camo != compareCreature.Camo ||
+            Cloning != compareCreature.Cloning || HotClimateTolerance != compareCreature.HotClimateTolerance ||
+            ColdClimateTolerance != compareCreature.ColdClimateTolerance || Herbavore != compareCreature.Herbavore ||
+            Carnivore != compareCreature.Carnivore || Scavenger != compareCreature.Scavenger ||
             Omnivore != compareCreature.Omnivore)
             return false;
-        
+
         return true;
     }
     private List<string> CopyAncestorList(List<string> toCopyList)
@@ -409,5 +411,26 @@ public class Creature : SpriteBase
         }
 
         return newList;
+    }
+    private void ZeroOutNegativeValues(ref Creature creature)
+    {
+        if (creature.EggCamo < 0) creature.EggCamo = 0;
+        if (creature.EggIncubation < 0) creature.EggIncubation = 0;
+        if (creature.EggInterval < 0) creature.EggInterval = 0;
+        if (creature.EggToxicity < 0) creature.EggToxicity = 0;
+        if (creature.FoodDigestion < 0) creature.FoodDigestion = 0;
+        if (creature.FoodDigestion < 0) creature.FoodDigestion = 0;
+        if (creature.Lifespan < 0) creature.Lifespan = 0;
+        if (creature.Lifespan < 0) creature.Lifespan = 0;
+        if (creature.Sight < 0) creature.Sight = 0;
+        if (creature.Attraction < 0) creature.Attraction = 0;
+        if (creature.Camo < 0) creature.Camo = 0;
+        if (creature.Cloning < 0) creature.Cloning = 0;
+        if (creature.ColdClimateTolerance < 0) creature.ColdClimateTolerance = 0;
+        if (creature.HotClimateTolerance < 0) creature.HotClimateTolerance = 0;
+        if (creature.Herbavore < 0) creature.Herbavore = 0;
+        if (creature.Carnivore < 0) creature.Carnivore = 0;
+        if (creature.Omnivore < 0) creature.Omnivore = 0;
+        if (creature.Scavenger < 0) creature.Scavenger = 0;
     }
 }
