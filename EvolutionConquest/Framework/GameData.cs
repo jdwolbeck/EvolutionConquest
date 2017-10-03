@@ -14,6 +14,7 @@ public class GameData
     public int FocusIndex { get; set; } //Camera focus index, this value is used when Paging between Creatures
     public List<SpeciesToCount> ChartData { get; set; }
     public List<SpeciesToCount> ChartDataTop { get; set; }
+    public bool ShowChart { get; set; }
 
     private const int CREATURES_COUNT_FOR_CHART = 10;
 
@@ -27,6 +28,7 @@ public class GameData
         Food = new List<Food>();
         Focus = null; //Init the focus to null to not follow any creatures
         FocusIndex = -1;
+        ShowChart = true;
     }
 
     public int GetUniqueSpeciesCount()

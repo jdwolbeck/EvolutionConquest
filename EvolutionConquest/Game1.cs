@@ -165,7 +165,7 @@ namespace EvolutionConquest
             else
             {
                 _inputState.Update();
-                _player.HandleInput(_inputState);
+                _player.HandleInput(_inputState, PlayerIndex.One, ref _gameData);
                 Global.Camera.HandleInput(_inputState, PlayerIndex.One, ref _gameData);
             }
 
@@ -241,7 +241,7 @@ namespace EvolutionConquest
                 {
                     if (_gameData.Creatures[i].Position.X - (_gameData.Creatures[i].Texture.Width / 2) <= 0 || _gameData.Creatures[i].Position.X + (_gameData.Creatures[i].Texture.Width / 2) >= Global.WORLD_SIZE)
                     {
-                        if (_gameData.Creatures[i].Direction.X >= 0 && _gameData.Creatures[i].Direction.Y >= 0 || 
+                        if (_gameData.Creatures[i].Direction.X >= 0 && _gameData.Creatures[i].Direction.Y >= 0 ||
                             _gameData.Creatures[i].Direction.X >= 0 && _gameData.Creatures[i].Direction.Y < 0 ||
                             _gameData.Creatures[i].Direction.X < 0 && _gameData.Creatures[i].Direction.Y >= 0 ||
                             _gameData.Creatures[i].Direction.X < 0 && _gameData.Creatures[i].Direction.Y < 0)
@@ -271,7 +271,7 @@ namespace EvolutionConquest
                                 creatureBoundsCalculated = true;
                                 _gameData.Creatures[i].CalculateBounds();
                             }
-                            if(_gameData.Creatures[i].Bounds.Intersects(_gameData.Food[k].Bounds))
+                            if (_gameData.Creatures[i].Bounds.Intersects(_gameData.Food[k].Bounds))
                             {
                                 _gameData.Creatures[i].UndigestedFood++;
                                 _gameData.Food.RemoveAt(k);
@@ -305,26 +305,37 @@ namespace EvolutionConquest
                     _uniqueSpeciesCount = _gameData.GetUniqueSpeciesCount();
 
                     //Generate Graph data
-                    if (!_chart.Visible && _gameData.ChartDataTop.Count > 0)
-                    {
-                        _chart.Visible = true;
-                    }
-                    _gameData.CalculateChartData(); //This will populat the Chart Data in _gameData
-                    _chart.Series.Clear();
-                    for (int i = 0; i < _gameData.ChartDataTop.Count; i++)
-                    {
-                        //string name = _gameData.ChartDataTop[i].Name + "(" + _gameData.ChartDataTop[i].Id + ")";
-                        string name = _gameData.ChartDataTop[i].Name + "(" + _gameData.ChartDataTop[i].CountsOverTime[_gameData.ChartDataTop[i].CountsOverTime.Count - 1] + ")";
+                    _gameData.CalculateChartData(); //This will populat the Chart Data in _gameData. Even if we hide the chart we need to keep track of ChartData
 
-                        _chart.Series.Add(name);
-                        _chart.Series[name].XValueType = ChartValueType.Int32;
-                        _chart.Series[name].ChartType = SeriesChartType.StackedArea100;
-                        _chart.Series[name].BorderWidth = 3;
-                        for (int k = 0; k < _gameData.ChartDataTop[i].CountsOverTime.Count; k++)
+                    if (_gameData.ShowChart)
+                    {
+                        if (!_chart.Visible && _gameData.ChartDataTop.Count > 0)
                         {
-                            _chart.Series[name].Points.AddXY(k, _gameData.ChartDataTop[i].CountsOverTime[k]);
+                            _chart.Visible = true;
+                        }
+
+                        _chart.Series.Clear();
+                        for (int i = 0; i < _gameData.ChartDataTop.Count; i++)
+                        {
+                            //string name = _gameData.ChartDataTop[i].Name + "(" + _gameData.ChartDataTop[i].Id + ")";
+                            string name = _gameData.ChartDataTop[i].Name + "(" + _gameData.ChartDataTop[i].CountsOverTime[_gameData.ChartDataTop[i].CountsOverTime.Count - 1] + ")";
+
+                            _chart.Series.Add(name);
+                            _chart.Series[name].XValueType = ChartValueType.Int32;
+                            _chart.Series[name].ChartType = SeriesChartType.StackedArea100;
+                            _chart.Series[name].BorderWidth = 3;
+                            for (int k = 0; k < _gameData.ChartDataTop[i].CountsOverTime.Count; k++)
+                            {
+                                _chart.Series[name].Points.AddXY(k, _gameData.ChartDataTop[i].CountsOverTime[k]);
+                            }
                         }
                     }
+                }
+
+                //Display chart logic here as well so that we do not need to wait 5 seconds
+                if (_gameData.ChartDataTop.Count > 0)
+                {
+                    _chart.Visible = _gameData.ShowChart;
                 }
             }
 
@@ -342,6 +353,7 @@ namespace EvolutionConquest
 
             // === DRAW WITHIN THE WORLD ===
             _spriteBatch.Begin(SpriteSortMode.BackToFront, BlendState.AlphaBlend, null, null, null, null, Global.Camera.TranslationMatrix);
+            #region Food/Eggs/Creatures
             //Draw Food
             for(int i = 0; i < _gameData.Food.Count; i++)
             {
@@ -362,17 +374,19 @@ namespace EvolutionConquest
                     _spriteBatch.Draw(_gameData.Creatures[i].Texture, _gameData.Creatures[i].Position, null, Color.White, _gameData.Creatures[i].Rotation, _gameData.Creatures[i].Origin, 1f, SpriteEffects.None, 1f);
                 }
             }
+            #endregion
 
-            //Draw Borders
+            #region Borders
             _spriteBatch.Draw(_borders.Texture, new Rectangle((int)_borders.LeftWall.X - BORDER_WIDTH, (int)_borders.LeftWall.Y, BORDER_WIDTH, Global.WORLD_SIZE + BORDER_WIDTH), Color.Black);
             _spriteBatch.Draw(_borders.Texture, new Rectangle((int)_borders.RightWall.X, (int)_borders.RightWall.Y - BORDER_WIDTH, BORDER_WIDTH, Global.WORLD_SIZE + BORDER_WIDTH), Color.Black);
             _spriteBatch.Draw(_borders.Texture, new Rectangle((int)_borders.TopWall.X - BORDER_WIDTH, (int)_borders.TopWall.Y - BORDER_WIDTH, Global.WORLD_SIZE + BORDER_WIDTH, BORDER_WIDTH), Color.Black);
             _spriteBatch.Draw(_borders.Texture, new Rectangle((int)_borders.BottomWall.X - BORDER_WIDTH, (int)_borders.BottomWall.Y, Global.WORLD_SIZE + (BORDER_WIDTH * 2), BORDER_WIDTH), Color.Black);
+            #endregion
             _spriteBatch.End();
 
-            //=== DRAW HUD INFORMATION ===
+            //=== DRAW HUD INFORMATION, DOES NOT DRAW TO WORLD SCALE ===
             _spriteBatch.Begin();
-            //Draw Creature information
+            #region Creature Information
             if (_gameData.Focus != null)
             {
                 int startingX = 10, startingY = 100, borderDepth = 5, width = 0, height = 0, textHeight = 0, textSpacing = 5;
@@ -392,9 +406,16 @@ namespace EvolutionConquest
                     currentY += textHeight + textSpacing;
                 }
             }
-            //Draw map statistics
-            string mapStats = "Alive Creatures: " + _gameData.Creatures.Count + ", Unique Species: " + _uniqueSpeciesCount + ", Dead Creatures: " + _gameData.DeadCreatures.Count + ", Eggs: " + _gameData.Eggs.Count + ", Map Food: " + _gameData.Food.Count + ".  Controls: [W][A][S][D] Camera Pan, [PageUp][PageDown] Iterate Creatures, [Shift] + [PageUp][PageDown] Iterate Species";
+            #endregion
+
+            #region Map Statistics
+            string mapStats = "Alive Creatures: " + _gameData.Creatures.Count + ", Unique Species: " + 
+                _uniqueSpeciesCount + ", Dead Creatures: " + _gameData.DeadCreatures.Count + ", Eggs: " + 
+                _gameData.Eggs.Count + ", Map Food: " + _gameData.Food.Count + 
+                ".  Controls: [W][A][S][D] Camera Pan, [PageUp][PageDown] Iterate Creatures, [Shift] + [PageUp][PageDown] Iterate Species, [F12] Toggle Chart";
+
             _spriteBatch.DrawString(_diagFont, mapStats, new Vector2((_graphics.PreferredBackBufferWidth / 2) - (_diagFont.MeasureString(mapStats).X / 2), 10), Color.Black);
+            #endregion
             _spriteBatch.End();
 
             base.Draw(gameTime);
