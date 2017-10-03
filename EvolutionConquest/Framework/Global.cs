@@ -6,6 +6,18 @@ using System.Threading.Tasks;
 
 public class Global
 {
+    public enum Anchor
+    {
+        TopCenter,
+        BottomCenter,
+        LeftCenter,
+        RightCenter,
+        TopLeft,
+        BottomLeft,
+        TopRight,
+        BottomRight
+    };
+
     public const int WORLD_SIZE = 5000;
     public static readonly Camera Camera = new Camera();
     //https://stackoverflow.com/questions/1011732/iterating-through-the-alphabet-c-sharp-a-caz

@@ -8,9 +8,6 @@ using System.Windows.Forms.DataVisualization.Charting;
 
 namespace EvolutionConquest
 {
-    /// <summary>
-    /// This is the main type for your game.
-    /// </summary>
     public class Game1 : Game
     {
         //Framework variables
@@ -19,9 +16,9 @@ namespace EvolutionConquest
         private InputState _inputState;
         private Player _player;
         private SpriteFont _diagFont;
+        private int _diagTextHeight;
         //Game variables
         private GameData _gameData;
-        private Texture2D _blackPixel;
         private Texture2D _whitePixel;
         private Texture2D _basicCreatureTexture;
         private Texture2D _foodTexture;
@@ -39,9 +36,9 @@ namespace EvolutionConquest
         private float _currentTicksPerSecond = 30;
         private float _tickSeconds;
         private float _elapsedTicksSinceSecondProcessing;
-        private bool _showChart;
         private int _speciesIdCounter;
-        private System.Windows.Forms.DataVisualization.Charting.Chart _chart;
+        private Chart _chart;
+        private List<string> _controlsListText;
         //Constants
         private const float TICKS_PER_SECOND = 30;
         private const int BORDER_WIDTH = 10;
@@ -59,7 +56,6 @@ namespace EvolutionConquest
             _elapsedSecondsSinceTick = 0;
             _elapsedTimeSinceFoodGeneration = 0;
             _elapsedTicksSinceSecondProcessing = 0;
-            _showChart = true;
             _speciesIdCounter = 0;
 
             IsMouseVisible = true;
@@ -80,15 +76,11 @@ namespace EvolutionConquest
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
             _diagFont = Content.Load<SpriteFont>("DiagnosticsFont");
+            _diagTextHeight = (int)Math.Ceiling(_diagFont.MeasureString("ABCDEFGHIJKLMNOPQRSTUVWXYZ[]").Y);
             _tickSeconds = TICKS_PER_SECOND;
 
-            _blackPixel = new Texture2D(_graphics.GraphicsDevice, 1, 1);
-            Color[] color = new Color[1];
-            color[0] = Color.Black;
-            _blackPixel.SetData(color);
-
             _whitePixel = new Texture2D(_graphics.GraphicsDevice, 1, 1);
-            color = new Color[1];
+            Color[] color = new Color[1];
             color[0] = Color.White;
             _whitePixel.SetData(color);
 
@@ -105,7 +97,7 @@ namespace EvolutionConquest
 
             //Generate the Map
             _borders = new Borders();
-            _borders.Texture = _blackPixel;
+            _borders.Texture = _whitePixel;
             _borders.LeftWall = new Vector2(0, 0);
             _borders.RightWall = new Vector2(Global.WORLD_SIZE, 0);
             _borders.TopWall = new Vector2(0, 0);
@@ -125,7 +117,7 @@ namespace EvolutionConquest
                 SpawnStartingCreature();
             }
             Creature creature = new Creature();
-            creature.InitNewCreature(_rand, _names, _speciesIdCounter);
+            creature.InitNewCreature(_rand, ref _names, _speciesIdCounter);
             _speciesIdCounter++;
             creature.Texture = _basicCreatureTexture;
             creature.Position = new Vector2(500, 100);
@@ -136,11 +128,25 @@ namespace EvolutionConquest
             _gameData.Focus = creature;
             _gameData.FocusIndex = _gameData.Creatures.Count - 1;
 
+            //Game Controls list for HUD
+            _controlsListText = new List<string>();
+            //Controls: [W][A][S][D] Camera Pan, [PageUp][PageDown] Iterate Creatures, [Shift] + [PageUp][PageDown] Iterate Species, [F12] Toggle Chart";
+            _controlsListText.Add("[W][A][S][D] Camera Pan");
+            _controlsListText.Add("[Scroll Wheel] Zoom");
+            _controlsListText.Add("[PageUp][PageDown] Cycle Creatures");
+            _controlsListText.Add("[Shift] + [PageUp][PageDown] Cycle Species");
+            _controlsListText.Add("[F10] Toggle Creature Statistics");
+            _controlsListText.Add("[F11] Toggle Chart");
+            _controlsListText.Add("[Left Click] Follow/Unfollow Creature");
+            _controlsListText.Add("[H] Highlight Species");
+            _controlsListText.Add(" ");
+            _controlsListText.Add("[F12] Toggle Control Menu");
+
             //Create the chart
             _chart = new Chart();
             _chart.Width = 600;
             _chart.Height = 300;
-            _chart.Location = new System.Drawing.Point(_graphics.PreferredBackBufferWidth - _chart.Width, _graphics.PreferredBackBufferHeight - _chart.Height);
+            _chart.Location = new System.Drawing.Point(_graphics.PreferredBackBufferWidth - _chart.Width - 2, _graphics.PreferredBackBufferHeight - _chart.Height - 2);
             _chart.Text = "Test";
             _chart.Visible = false;
             ChartArea chartArea1 = new ChartArea();
@@ -219,7 +225,7 @@ namespace EvolutionConquest
                     if (_gameData.Creatures[i].DigestedFood > 0 && _gameData.Creatures[i].TicksSinceLastEgg >= _gameData.Creatures[i].EggInterval)
                     {
                         _gameData.Creatures[i].DigestedFood--; //Costs one digested food to lay an egg
-                        Egg egg = _gameData.Creatures[i].LayEgg(_rand, _names, _gameData.Creatures);
+                        Egg egg = _gameData.Creatures[i].LayEgg(_rand, ref _names, _gameData.Creatures);
                         //TODO handle this maybe in the Creature class
                         egg.Texture = _eggTexture;
                         _gameData.Eggs.Add(egg); //Add the new egg to gameData, the LayEgg function will calculate the Mutations
@@ -317,8 +323,16 @@ namespace EvolutionConquest
                         _chart.Series.Clear();
                         for (int i = 0; i < _gameData.ChartDataTop.Count; i++)
                         {
-                            //string name = _gameData.ChartDataTop[i].Name + "(" + _gameData.ChartDataTop[i].Id + ")";
-                            string name = _gameData.ChartDataTop[i].Name + "(" + _gameData.ChartDataTop[i].CountsOverTime[_gameData.ChartDataTop[i].CountsOverTime.Count - 1] + ")";
+                            int? count = _gameData.ChartDataTop[i].CountsOverTime[_gameData.ChartDataTop[i].CountsOverTime.Count - 1];
+                            string name = String.Empty;
+                            if (count != null)
+                            {
+                                name = _gameData.ChartDataTop[i].Name + "(" + count + ")";
+                            }
+                            else
+                            {
+                                name = _gameData.ChartDataTop[i].Name;
+                            }
 
                             _chart.Series.Add(name);
                             _chart.Series[name].XValueType = ChartValueType.Int32;
@@ -352,21 +366,28 @@ namespace EvolutionConquest
             GraphicsDevice.Clear(Color.White);
 
             // === DRAW WITHIN THE WORLD ===
+            DrawWorldObjects();
+            //=== DRAW HUD INFORMATION, DOES NOT DRAW TO WORLD SCALE ===
+            DrawHUD(); 
+
+            base.Draw(gameTime);
+        }
+
+        //Draw World Functions
+        private void DrawWorldObjects()
+        {
             _spriteBatch.Begin(SpriteSortMode.BackToFront, BlendState.AlphaBlend, null, null, null, null, Global.Camera.TranslationMatrix);
-            #region Food/Eggs/Creatures
-            //Draw Food
-            for(int i = 0; i < _gameData.Food.Count; i++)
-            {
-                _spriteBatch.Draw(_gameData.Food[i].Texture, _gameData.Food[i].Position, null, Color.White, 0f, _gameData.Food[i].Origin, 1f, SpriteEffects.None, 1f);
-            }
 
-            //Draw Eggs
-            for (int i = 0; i < _gameData.Eggs.Count; i++)
-            {
-                _spriteBatch.Draw(_gameData.Eggs[i].Texture, _gameData.Eggs[i].Position, null, Color.White, 0f, _gameData.Eggs[i].Origin, 1f, SpriteEffects.None, 1f);
-            }
+            DrawFood();
+            DrawEggs();
+            DrawCreatures();
+            DrawBorders();
+            DrawHighlightCreatures();
 
-            //Draw Creatures
+            _spriteBatch.End();
+        }
+        private void DrawCreatures()
+        {
             for (int i = 0; i < _gameData.Creatures.Count; i++)
             {
                 if (_gameData.Creatures[i].IsAlive)
@@ -374,51 +395,221 @@ namespace EvolutionConquest
                     _spriteBatch.Draw(_gameData.Creatures[i].Texture, _gameData.Creatures[i].Position, null, Color.White, _gameData.Creatures[i].Rotation, _gameData.Creatures[i].Origin, 1f, SpriteEffects.None, 1f);
                 }
             }
-            #endregion
-
-            #region Borders
-            _spriteBatch.Draw(_borders.Texture, new Rectangle((int)_borders.LeftWall.X - BORDER_WIDTH, (int)_borders.LeftWall.Y, BORDER_WIDTH, Global.WORLD_SIZE + BORDER_WIDTH), Color.Black);
-            _spriteBatch.Draw(_borders.Texture, new Rectangle((int)_borders.RightWall.X, (int)_borders.RightWall.Y - BORDER_WIDTH, BORDER_WIDTH, Global.WORLD_SIZE + BORDER_WIDTH), Color.Black);
-            _spriteBatch.Draw(_borders.Texture, new Rectangle((int)_borders.TopWall.X - BORDER_WIDTH, (int)_borders.TopWall.Y - BORDER_WIDTH, Global.WORLD_SIZE + BORDER_WIDTH, BORDER_WIDTH), Color.Black);
-            _spriteBatch.Draw(_borders.Texture, new Rectangle((int)_borders.BottomWall.X - BORDER_WIDTH, (int)_borders.BottomWall.Y, Global.WORLD_SIZE + (BORDER_WIDTH * 2), BORDER_WIDTH), Color.Black);
-            #endregion
-            _spriteBatch.End();
-
-            //=== DRAW HUD INFORMATION, DOES NOT DRAW TO WORLD SCALE ===
-            _spriteBatch.Begin();
-            #region Creature Information
-            if (_gameData.Focus != null)
+        }
+        private void DrawEggs()
+        {
+            for (int i = 0; i < _gameData.Eggs.Count; i++)
             {
-                int startingX = 10, startingY = 100, borderDepth = 5, width = 0, height = 0, textHeight = 0, textSpacing = 5;
-                int currentX = startingX + borderDepth + textSpacing;
-                int currentY = startingY + borderDepth + textSpacing;
+                _spriteBatch.Draw(_gameData.Eggs[i].Texture, _gameData.Eggs[i].Position, null, Color.White, 0f, _gameData.Eggs[i].Origin, 1f, SpriteEffects.None, 1f);
+            }
+        }
+        private void DrawFood()
+        {
+            for (int i = 0; i < _gameData.Food.Count; i++)
+            {
+                _spriteBatch.Draw(_gameData.Food[i].Texture, _gameData.Food[i].Position, null, Color.White, 0f, _gameData.Food[i].Origin, 1f, SpriteEffects.None, 1f);
+            }
+        }
+        private void DrawBorders()
+        {
+            _spriteBatch.Draw(_borders.Texture, new Rectangle((int)_borders.LeftWall.X - BORDER_WIDTH, (int)_borders.LeftWall.Y, BORDER_WIDTH, Global.WORLD_SIZE + BORDER_WIDTH), Color.SaddleBrown);
+            _spriteBatch.Draw(_borders.Texture, new Rectangle((int)_borders.RightWall.X, (int)_borders.RightWall.Y - BORDER_WIDTH, BORDER_WIDTH, Global.WORLD_SIZE + BORDER_WIDTH), Color.SaddleBrown);
+            _spriteBatch.Draw(_borders.Texture, new Rectangle((int)_borders.TopWall.X - BORDER_WIDTH, (int)_borders.TopWall.Y - BORDER_WIDTH, Global.WORLD_SIZE + BORDER_WIDTH, BORDER_WIDTH), Color.SaddleBrown);
+            _spriteBatch.Draw(_borders.Texture, new Rectangle((int)_borders.BottomWall.X - BORDER_WIDTH, (int)_borders.BottomWall.Y, Global.WORLD_SIZE + (BORDER_WIDTH * 2), BORDER_WIDTH), Color.SaddleBrown);
+        }
+        private void DrawHighlightCreatures()
+        {
+            if (_gameData.HighlightSpecies)
+            {
+                int followedSpecies = _gameData.Focus.SpeciesId;
+                int borderWidth = 3;
 
-                _creatureStats = _gameData.Focus.GetCreatureInformation();
-                textHeight = (int)Math.Ceiling(_diagFont.MeasureString("ABCDEFGHIJKLMNOPQRSTUVWXYZ").Y);
-                height = (borderDepth * 2) + _creatureStats.Count * (textHeight + textSpacing);
-                width = (borderDepth * 2) + (int)Math.Ceiling(_diagFont.MeasureString("Position: {X:-100.000000, Y:-100.000000}").X) + (textSpacing * 2);
-
-                _spriteBatch.Draw(_blackPixel, new Rectangle(startingX, startingY, width, height), Color.Black);
-                _spriteBatch.Draw(_whitePixel, new Rectangle(startingX + borderDepth, startingY + borderDepth, width - borderDepth * 2, height - borderDepth * 2), Color.White);
-                for (int i = 0; i < _creatureStats.Count; i++)
+                for (int i = 0; i < _gameData.Creatures.Count; i++)
                 {
-                    _spriteBatch.DrawString(_diagFont, _creatureStats[i], new Vector2(currentX, currentY), Color.Black);
-                    currentY += textHeight + textSpacing;
+                    if (_gameData.Creatures[i].SpeciesId == followedSpecies)
+                    {
+                        int diagnolLength = (int)Math.Ceiling(Math.Sqrt((_gameData.Creatures[i].Texture.Width * _gameData.Creatures[i].Texture.Width) + (_gameData.Creatures[i].Texture.Height * _gameData.Creatures[i].Texture.Height)));
+                        float upperLeftX = _gameData.Creatures[i].Position.X - (diagnolLength / 2), upperLeftY = _gameData.Creatures[i].Position.Y - (diagnolLength / 2);
+
+                        _spriteBatch.Draw(_whitePixel, new Rectangle((int)upperLeftX - borderWidth, (int)upperLeftY - borderWidth, diagnolLength + borderWidth * 2, borderWidth), Color.Red);
+                        _spriteBatch.Draw(_whitePixel, new Rectangle((int)upperLeftX - borderWidth, (int)upperLeftY + diagnolLength, diagnolLength + borderWidth * 2, borderWidth), Color.Red);
+                        _spriteBatch.Draw(_whitePixel, new Rectangle((int)upperLeftX + diagnolLength, (int)upperLeftY - borderWidth, borderWidth, diagnolLength + borderWidth * 2), Color.Red);
+                        _spriteBatch.Draw(_whitePixel, new Rectangle((int)upperLeftX - borderWidth, (int)upperLeftY - borderWidth, borderWidth, diagnolLength + borderWidth * 2), Color.Red);
+                    }
                 }
             }
-            #endregion
+        }
 
-            #region Map Statistics
-            string mapStats = "Alive Creatures: " + _gameData.Creatures.Count + ", Unique Species: " + 
-                _uniqueSpeciesCount + ", Dead Creatures: " + _gameData.DeadCreatures.Count + ", Eggs: " + 
-                _gameData.Eggs.Count + ", Map Food: " + _gameData.Food.Count + 
-                ".  Controls: [W][A][S][D] Camera Pan, [PageUp][PageDown] Iterate Creatures, [Shift] + [PageUp][PageDown] Iterate Species, [F12] Toggle Chart";
+        //Draw HUD Functions
+        private void DrawHUD()
+        {
+            _spriteBatch.Begin();
+
+            DrawCreatureStatsPanel();
+            DrawMapStatisctics();
+            DrawControlsPanel();
+            DrawChartBorder();
+
+            _spriteBatch.End();
+        }
+        private void DrawCreatureStatsPanel()
+        {
+            if (_gameData.ShowCreatureStats && _gameData.Focus != null)
+            {
+                DrawPanelWithText(_diagFont, "Creature Statistics", _diagFont, _gameData.Focus.GetCreatureInformation(), Global.Anchor.LeftCenter, (int)Math.Ceiling(_diagFont.MeasureString("Position: {X:-100.000000, Y:-100.000000}").X), 0, 20);
+            }
+        }
+        private void DrawMapStatisctics()
+        {
+            string deadCreatures = String.Empty;
+
+            if (_gameData.DeadCreatures.Count >= 1000)
+            {
+                deadCreatures = Math.Round(_gameData.DeadCreatures.Count / 1000.0, 2).ToString("#,##0") + " k";
+            }
+            else if (_gameData.DeadCreatures.Count >= 1000000)
+            {
+                deadCreatures = Math.Round(_gameData.DeadCreatures.Count / 1000000.0, 2).ToString("#,##0") + " m";
+            }
+            else
+            {
+                deadCreatures = _gameData.DeadCreatures.Count.ToString("#,##0");
+            }
+
+            string mapStats = "Alive Creatures: " + _gameData.Creatures.Count.ToString("#,##0") + ", Unique Species: " +
+                _uniqueSpeciesCount.ToString("#,##0") + ", Dead Creatures: " + deadCreatures + ", Eggs: " +
+                _gameData.Eggs.Count.ToString("#,##0") + ", Map Food: " + _gameData.Food.Count.ToString("#,##0");
 
             _spriteBatch.DrawString(_diagFont, mapStats, new Vector2((_graphics.PreferredBackBufferWidth / 2) - (_diagFont.MeasureString(mapStats).X / 2), 10), Color.Black);
-            #endregion
-            _spriteBatch.End();
+        }
+        private void DrawControlsPanel()
+        {
+            if (_gameData.ShowControls)
+            {
+                DrawPanelWithText(_diagFont, "Controls", _diagFont, _controlsListText, Global.Anchor.TopRight, 0, 0, 20);
+            }
+            else
+            {
+                DrawPanelWithText(_diagFont, String.Empty, _diagFont, new List<string> { "[F11] Show Controls" }, Global.Anchor.TopRight, 0, 0, 20);
+            }
+        }
+        private void DrawChartBorder()
+        {
+            if (_gameData.ShowChart && _gameData.ChartDataTop.Count > 0)
+            {
+                int borderDepth = 2;
 
-            base.Draw(gameTime);
+                _spriteBatch.Draw(_whitePixel, new Rectangle(_chart.Location.X - borderDepth, _chart.Location.Y - borderDepth, _chart.Width + (borderDepth * 2), _chart.Height + (borderDepth * 2)), Color.Black);
+            }
+        }
+        private void DrawPanelWithText(SpriteFont headerFont, string header, SpriteFont textFont, List<string> text, Global.Anchor anchor, int lockedWidthValue, int lockedHeightValue, int screenBuffer)
+        {
+            Color borderColor = Color.Black;
+            Color headerBackgroundColor = Color.LightGreen;
+            Color headerTextColor = Color.DarkGreen;
+            Color textColor = Color.DarkGreen;
+            Color textBackgroundColor = Color.LightBlue;
+            int startingX = 0, startingY = 0, width = 0, height = 0, headerHeight = 0, textHeight = 0, textWidth = 0, headerTextHeight = 0;
+            int borderDepth = 2, textSpacing = 5;
+            Vector2 headerSize;
+            bool drawHeader = true;
+
+            if (String.IsNullOrEmpty(header))
+                drawHeader = false;
+
+            if (drawHeader)
+            {
+                headerSize = headerFont.MeasureString(header);
+                headerTextHeight = (int)Math.Ceiling(headerSize.Y);
+                textWidth = (int)Math.Ceiling(headerSize.Y);
+            }
+
+            if (lockedWidthValue == 0)
+            {
+                foreach (string s in text)
+                {
+                    int tmpSize = (int)Math.Ceiling(textFont.MeasureString(s).X);
+                    if (tmpSize > textWidth)
+                    {
+                        textWidth = tmpSize;
+                    }
+                }
+            }
+            else
+            {
+                textWidth = lockedWidthValue;
+            }
+
+            if (lockedHeightValue == 0)
+            {
+                textHeight = _diagTextHeight;
+            }
+            else
+            {
+                textHeight = lockedHeightValue;
+            }
+
+            if (drawHeader)
+                headerHeight = (textSpacing * 4) + headerTextHeight;
+            height = headerHeight + (borderDepth * 2) + (text.Count * (textHeight + textSpacing)) + textSpacing;
+            width = (borderDepth * 2) + textWidth + (textSpacing * 2);
+
+            switch (anchor)
+            {
+                case Global.Anchor.TopCenter:
+                    startingX = (_graphics.PreferredBackBufferWidth / 2) - (width / 2);
+                    startingY = screenBuffer;
+                    break;
+                case Global.Anchor.BottomCenter:
+                    startingX = (_graphics.PreferredBackBufferWidth / 2) - (width / 2);
+                    startingY = _graphics.PreferredBackBufferHeight - height - screenBuffer;
+                    break;
+                case Global.Anchor.RightCenter:
+                    startingX = _graphics.PreferredBackBufferWidth - width - screenBuffer;
+                    startingY = (_graphics.PreferredBackBufferHeight / 2) - (height / 2);
+                    break;
+                case Global.Anchor.LeftCenter:
+                    startingX = screenBuffer;
+                    startingY = (_graphics.PreferredBackBufferHeight / 2) - (height / 2);
+                    break;
+                case Global.Anchor.TopLeft:
+                    startingX = screenBuffer;
+                    startingY = screenBuffer;
+                    break;
+                case Global.Anchor.TopRight:
+                    startingX = _graphics.PreferredBackBufferWidth - width - screenBuffer;
+                    startingY = screenBuffer;
+                    break;
+                case Global.Anchor.BottomLeft:
+                    startingX = screenBuffer;
+                    startingY = _graphics.PreferredBackBufferHeight - height - screenBuffer;
+                    break;
+                case Global.Anchor.BottomRight:
+                    startingX = _graphics.PreferredBackBufferWidth - width - screenBuffer;
+                    startingY = _graphics.PreferredBackBufferHeight - height - screenBuffer;
+                    break;
+            }
+
+            int currentX = startingX + borderDepth + textSpacing;
+            int currentY = startingY + borderDepth + textSpacing;
+
+            _spriteBatch.Draw(_whitePixel, new Rectangle(startingX, startingY, width, height), borderColor);
+            _spriteBatch.Draw(_whitePixel, new Rectangle(startingX + borderDepth, startingY + borderDepth, width - borderDepth * 2, height - borderDepth * 2), textBackgroundColor);
+            if (drawHeader)
+                _spriteBatch.Draw(_whitePixel, new Rectangle(startingX + borderDepth, startingY + borderDepth, width - borderDepth * 2, headerHeight), headerBackgroundColor);
+
+            if (drawHeader)
+            {
+                currentY += textSpacing;
+                _spriteBatch.DrawString(textFont, header, new Vector2(currentX, currentY), headerTextColor);
+                currentY += headerTextHeight + (textSpacing * 3);
+            }
+
+            for (int i = 0; i < text.Count; i++)
+            {
+                _spriteBatch.DrawString(textFont, text[i], new Vector2(currentX, currentY), textColor);
+                currentY += textHeight + textSpacing;
+            }
         }
 
         //Helper functions
@@ -438,7 +629,7 @@ namespace EvolutionConquest
         private void SpawnStartingCreature()
         {
             Creature creature = new Creature();
-            creature.InitNewCreature(_rand, _names, _speciesIdCounter);
+            creature.InitNewCreature(_rand, ref _names, _speciesIdCounter);
             creature.Texture = _basicCreatureTexture;
             creature.Position = new Vector2(_rand.Next(creature.Texture.Width, Global.WORLD_SIZE - creature.Texture.Width), _rand.Next(creature.Texture.Height, Global.WORLD_SIZE - creature.Texture.Height));
             _gameData.Creatures.Add(creature);

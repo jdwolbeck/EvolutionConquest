@@ -16,9 +16,21 @@ public class Player
     {
         PlayerIndex playerIndex;
 
-        if (inputState.IsNewKeyPress(Keys.F12, controllingPlayer, out playerIndex))
+        if (inputState.IsNewKeyPress(Keys.F11, controllingPlayer, out playerIndex))
         {
             gameData.ShowChart = !gameData.ShowChart;
+        }
+        if (inputState.IsNewKeyPress(Keys.F12, controllingPlayer, out playerIndex))
+        {
+            gameData.ShowControls = !gameData.ShowControls;
+        }
+        if (inputState.IsNewKeyPress(Keys.H, controllingPlayer, out playerIndex))
+        {
+            gameData.HighlightSpecies = !gameData.HighlightSpecies;
+        }
+        if (inputState.IsNewKeyPress(Keys.F10, controllingPlayer, out playerIndex))
+        {
+            gameData.ShowCreatureStats = !gameData.ShowCreatureStats;
         }
     }
 }

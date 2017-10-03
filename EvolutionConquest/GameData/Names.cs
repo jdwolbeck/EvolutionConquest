@@ -5425,10 +5425,37 @@ public class Names
         NameList.Add("Adena");
         NameList.Add("Adah");
         NameList.Add("John");
+
+        //Go through the list of names and remove any duplicates
+        for (int i = 0; i < NameList.Count - 1; i++)
+        {
+            for (int k = i + 1; k < NameList.Count; k++)
+            {
+                if (NameList[i] == NameList[k])
+                {
+                    NameList.RemoveAt(k); //Remove at k so that we do not mess up our loop variables
+                }
+            }
+        }
     }
 
     public string GetRandomName(Random rand)
     {
-        return NameList[rand.Next(0,NameList.Count())].Trim();
+        string name = String.Empty;
+
+        if (NameList.Count > 0)
+        {
+            int index = rand.Next(0, NameList.Count());
+            name = NameList[index].Trim();
+
+            NameList.RemoveAt(index); //Don't allow the same name to be selected by removing the name from the list
+        }
+        else
+        {
+            DateTime time = DateTime.Now;
+            name = time.Year.ToString() + time.Month.ToString() + time.Day.ToString() + time.Hour.ToString() + time.Minute.ToString() + time.Second.ToString() + time.Millisecond.ToString() + Math.Round(rand.NextDouble(), 8).ToString();
+        }
+
+        return name;
     }
 }

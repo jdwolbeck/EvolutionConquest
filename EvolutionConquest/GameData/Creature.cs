@@ -103,7 +103,7 @@ public class Creature : SpriteBase
         Ancestors = new List<string>();
     }
 
-    public void InitNewCreature(Random rand, Names names, int speciesId)
+    public void InitNewCreature(Random rand, ref Names names, int speciesId)
     {
         IsAlive = true;
         IsChangingSpecies = false;
@@ -154,7 +154,7 @@ public class Creature : SpriteBase
             DigestedFood++;
         }
     }
-    public Egg LayEgg(Random rand, Names names, List<Creature> gameDataCreatureList)
+    public Egg LayEgg(Random rand, ref Names names, List<Creature> gameDataCreatureList)
     {
         Egg egg = new Egg();
         Creature baby = new Creature();
@@ -279,7 +279,7 @@ public class Creature : SpriteBase
             string ancestorsString = String.Empty;
             if (Ancestors.Count > 5)
             {
-                ancestorsString += Ancestors[0] + ", " + Ancestors[1] + "..." + Ancestors[Ancestors.Count - 2] + ", " + Ancestors[Ancestors.Count - 1];
+                ancestorsString += Ancestors[0] + ", " + Ancestors[1] + "..." + Ancestors[Ancestors.Count - 1];
             }
             else
             {

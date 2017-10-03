@@ -15,6 +15,9 @@ public class GameData
     public List<SpeciesToCount> ChartData { get; set; }
     public List<SpeciesToCount> ChartDataTop { get; set; }
     public bool ShowChart { get; set; }
+    public bool ShowControls { get; set; }
+    public bool HighlightSpecies { get; set; }
+    public bool ShowCreatureStats { get; set; }
 
     private const int CREATURES_COUNT_FOR_CHART = 10;
 
@@ -29,6 +32,9 @@ public class GameData
         Focus = null; //Init the focus to null to not follow any creatures
         FocusIndex = -1;
         ShowChart = true;
+        ShowControls = true;
+        HighlightSpecies = false;
+        ShowCreatureStats = true;
     }
 
     public int GetUniqueSpeciesCount()
