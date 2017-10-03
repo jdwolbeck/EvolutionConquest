@@ -17,6 +17,10 @@ public class Creature : SpriteBase
     /// </summary>
 
     public bool IsAlive { get; set; }
+    public List<string> Ancestors { get; set; } //Chain of Ancestors (Starts blank)
+    public bool IsChangingSpecies { get; set; } //Is the creature transitioning to a new species
+    public string NewSpeciesName { get; set; } //Name of new species for these offspring
+    public int NewSpeciesId { get; set; } //ID for the new species
     public int SpeciesId { get; set; } //Unique ID for species
     public string Species { get; set; } //Random name assigned to specied
     public string SpeciesStrain { get; set; } //This will keep track of specific strains within a species
@@ -96,11 +100,14 @@ public class Creature : SpriteBase
 
     public Creature()
     {
+        Ancestors = new List<string>();
     }
 
     public void InitNewCreature(Random rand, Names names, int speciesId)
     {
         IsAlive = true;
+        IsChangingSpecies = false;
+        NewSpeciesName = String.Empty;
         SpeciesId = speciesId;
         Species = names.GetRandomName(rand);
         SpeciesStrain = String.Empty;
@@ -147,7 +154,7 @@ public class Creature : SpriteBase
             DigestedFood++;
         }
     }
-    public Egg LayEgg(Random rand)
+    public Egg LayEgg(Random rand, Names names, List<Creature> gameDataCreatureList)
     {
         Egg egg = new Egg();
         Creature baby = new Creature();
@@ -155,12 +162,15 @@ public class Creature : SpriteBase
         TicksSinceLastEgg = 0;
         EggsCreated++;
 
+        baby.Ancestors = CopyAncestorList(Ancestors);
         baby.IsAlive = true;
+        baby.IsChangingSpecies = false;
+        baby.NewSpeciesId = -1;
+        baby.NewSpeciesName = String.Empty;
         baby.Rotation = MathHelper.ToRadians(rand.Next(0, 360));
         baby.Position = Position;
         baby.SpeciesId = SpeciesId;
         baby.Species = Species;        
-        BabySpeciesStrainCounter = Global.GetNextBase26(BabySpeciesStrainCounter);
         baby.BabySpeciesStrainCounter = "A";
         baby.Generation = Generation + 1;
         baby.UndigestedFood = 0;
@@ -193,25 +203,37 @@ public class Creature : SpriteBase
         //Only iterate the Species/Strain if something that can Mutate has changed
         if (!IsSameAs(baby))
         {
-            if (SpeciesStrain.Replace(" ", "").Length > 30) //New Species once the Strain goes past 30 different strains
+            if (IsChangingSpecies || SpeciesStrain.Replace(" ", "").Length > 20) //New Species once the Strain goes past 20 different strains
             {
-                int romanNumeralIndex = baby.Species.IndexOf(' ');
-                if (romanNumeralIndex > 0) //Increment Roman numeral of we Detect a space
+                if (!IsChangingSpecies)
                 {
-                    string romanNumeral = baby.Species.Substring(romanNumeralIndex + 1);
-                    romanNumeral = Roman.To(Roman.From(romanNumeral) + 1);
+                    NewSpeciesName = names.GetRandomName(rand);
+                    NewSpeciesId = gameDataCreatureList.Max(t => t.SpeciesId) + 1;
+                    IsChangingSpecies = true;
+                }
+                baby.Ancestors.Add(Species);
+                baby.Species = NewSpeciesName;
+                baby.SpeciesId = NewSpeciesId;
+                baby.SpeciesStrain = BabySpeciesStrainCounter;
 
-                    baby.Species = baby.Species.Substring(0, romanNumeralIndex) + " " + romanNumeral;
-                }
-                else
-                {
-                    baby.Species = baby.Species + " II";
-                }
-                baby.SpeciesStrain = String.Empty;
+                ///Roman Numeral at the end of Species name does not work
+                //int romanNumeralIndex = baby.Species.IndexOf(' ');
+                //if (romanNumeralIndex > 0) //Increment Roman numeral of we Detect a space
+                //{
+                //    string romanNumeral = baby.Species.Substring(romanNumeralIndex + 1);
+                //    romanNumeral = Roman.To(Roman.From(romanNumeral) + 1);
+
+                //    baby.Species = baby.Species.Substring(0, romanNumeralIndex) + " " + romanNumeral;
+                //}
+                //else
+                //{
+                //    baby.Species = baby.Species + " II";
+                //}
             }
             else
             {
                 baby.SpeciesStrain = SpeciesStrain + " " + BabySpeciesStrainCounter;
+                BabySpeciesStrainCounter = Global.GetNextBase26(BabySpeciesStrainCounter);
             }
         }
         else
@@ -250,7 +272,17 @@ public class Creature : SpriteBase
                 info.Add("Strain: " + SpeciesStrain);
             }
         }
-        info.Add("Strain Counter: " + BabySpeciesStrainCounter);
+        if (Ancestors.Count > 0)
+        {
+            string ancestorsString = String.Empty;
+            for (int i = 0; i < Ancestors.Count; i++)
+            {
+                ancestorsString += Ancestors[i] + ", ";
+            }
+            ancestorsString = ancestorsString.Substring(0, ancestorsString.Length - 2);
+            info.Add("Ancestors: " + ancestorsString);
+        }
+        //info.Add("Strain Counter: " + BabySpeciesStrainCounter);
         info.Add("Generation: " + Generation);
         info.Add("Lifespan: " + Math.Round(Lifespan / 10.0, 1).ToString());
         info.Add("Age: " + Math.Round(ElapsedTicks / 10.0, 1).ToString());
@@ -358,5 +390,16 @@ public class Creature : SpriteBase
             return false;
         
         return true;
+    }
+    private List<string> CopyAncestorList(List<string> toCopyList)
+    {
+        List<string> newList = new List<string>();
+
+        for (int i = 0; i < toCopyList.Count; i++)
+        {
+            newList.Add(toCopyList[i]);
+        }
+
+        return newList;
     }
 }

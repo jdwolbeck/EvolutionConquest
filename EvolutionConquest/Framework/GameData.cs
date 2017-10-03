@@ -15,6 +15,8 @@ public class GameData
     public List<SpeciesToCount> ChartData { get; set; }
     public List<SpeciesToCount> ChartDataTop { get; set; }
 
+    private const int CREATURES_COUNT_FOR_CHART = 10;
+
     public GameData()
     {
         ChartData = new List<SpeciesToCount>();
@@ -88,15 +90,57 @@ public class GameData
                 }
             }
 
+            //Cleanup ChartData for Species that are Extinct
+            for (int i = ChartData.Count - 1; i >= 0; i--)
+            {
+                if (ChartData[i].CountsOverTime[ChartData[i].CountsOverTime.Count - 1] == 0)
+                {
+                    //Make sure that the species does not have a creature in an egg before removing
+                    bool foundInEgg = false;
+                    foreach (Egg e in Eggs)
+                    {
+                        if (e.Creature.SpeciesId == ChartData[i].Id)
+                        {
+                            foundInEgg = true;
+                            break;
+                        }
+                    }
+
+                    if(!foundInEgg)
+                        ChartData.RemoveAt(i);
+                }
+            }
+
+            //Cleanup ChartData when species evolve and all species are evolved species since the beginning part of the graph becomes useless
+            bool allZero = true;
+            while (allZero)
+            {
+                for (int i = 0; i < ChartData.Count; i++)
+                {
+                    if (ChartData[i].CountsOverTime[0] != 0)
+                    {
+                        allZero = false;
+                        break;
+                    }
+                }
+                if (allZero)
+                {
+                    for (int i = 0; i < ChartData.Count; i++)
+                    {
+                        ChartData[i].CountsOverTime.RemoveAt(0);
+                    }
+                }
+            }
+
             ChartDataTop.Clear();
-            List<SpeciesToCount> topFive = ChartData.Where(t => t.CountsOverTime[t.CountsOverTime.Count - 1] > 0).OrderByDescending(t => t.CountsOverTime[t.CountsOverTime.Count - 1]).ToList();
-            int countToGet = topFive.Count();
-            if (countToGet > 5)
-                countToGet = 5;
+            List<SpeciesToCount> topList = ChartData.Where(t => t.CountsOverTime[t.CountsOverTime.Count - 1] > 0).OrderByDescending(t => t.CountsOverTime[t.CountsOverTime.Count - 1]).ToList();
+            int countToGet = topList.Count();
+            if (countToGet > CREATURES_COUNT_FOR_CHART)
+                countToGet = CREATURES_COUNT_FOR_CHART;
 
             for (int i = 0; i < countToGet; i++)
             {
-                ChartDataTop.Add(topFive[i]);
+                ChartDataTop.Add(topList[i]);
             }
         }
     }

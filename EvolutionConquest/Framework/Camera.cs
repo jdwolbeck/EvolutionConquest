@@ -198,52 +198,115 @@ public class Camera
         }
         if (inputState.IsNewKeyPress(Keys.PageDown, controllingPlayer, out playerIndex))
         {
-            if (gameData.FocusIndex > gameData.Creatures.Count - 1)
+            if (inputState.IsKeyPressed(Keys.LeftShift, controllingPlayer, out playerIndex))
             {
-                gameData.FocusIndex = gameData.Creatures.Count - 1;
-            }
-
-            if (gameData.Focus != null && gameData.FocusIndex >= 0)
-            {
-                if (gameData.FocusIndex == 0)
+                if (gameData.FocusIndex > gameData.Creatures.Count - 1)
                 {
                     gameData.FocusIndex = gameData.Creatures.Count - 1;
                 }
                 else
                 {
-                    gameData.FocusIndex--;
+                    int speciesId = gameData.Creatures[gameData.FocusIndex].SpeciesId;
+                    if (speciesId > 0)
+                    {
+                        speciesId--;
+                    }
+                    else
+                    {
+                        speciesId = gameData.Creatures.Max(t => t.SpeciesId);
+                    }
+
+                    for(int i = 0; i < gameData.Creatures.Count; i++)
+                    {
+                        if (gameData.Creatures[i].SpeciesId == speciesId)
+                        {
+                            gameData.FocusIndex = i;
+                            gameData.Focus = gameData.Creatures[gameData.FocusIndex];
+                        }
+                    }
                 }
-                gameData.Focus = gameData.Creatures[gameData.FocusIndex];
             }
             else
             {
-                gameData.FocusIndex = 0;
-                gameData.Focus = gameData.Creatures[gameData.FocusIndex];
+                if (gameData.FocusIndex > gameData.Creatures.Count - 1)
+                {
+                    gameData.FocusIndex = gameData.Creatures.Count - 1;
+                }
+
+                if (gameData.Focus != null && gameData.FocusIndex >= 0)
+                {
+                    if (gameData.FocusIndex == 0)
+                    {
+                        gameData.FocusIndex = gameData.Creatures.Count - 1;
+                    }
+                    else
+                    {
+                        gameData.FocusIndex--;
+                    }
+                    gameData.Focus = gameData.Creatures[gameData.FocusIndex];
+                }
+                else
+                {
+                    gameData.FocusIndex = 0;
+                    gameData.Focus = gameData.Creatures[gameData.FocusIndex];
+                }
             }
         }
         else if (inputState.IsNewKeyPress(Keys.PageUp, controllingPlayer, out playerIndex))
         {
-            if (gameData.FocusIndex > gameData.Creatures.Count - 1)
+            if (inputState.IsKeyPressed(Keys.LeftShift, controllingPlayer, out playerIndex))
             {
-                gameData.FocusIndex = gameData.Creatures.Count - 1;
-            }
-
-            if (gameData.Focus != null && gameData.FocusIndex >= 0)
-            {
-                if (gameData.FocusIndex == gameData.Creatures.Count - 1)
+                if (gameData.FocusIndex > gameData.Creatures.Count - 1)
                 {
-                    gameData.FocusIndex = 0;
+                    gameData.FocusIndex = gameData.Creatures.Count - 1;
                 }
                 else
                 {
-                    gameData.FocusIndex++;
+                    int speciesId = gameData.Creatures[gameData.FocusIndex].SpeciesId;
+                    int speciesIdMax = gameData.Creatures.Max(t => t.SpeciesId);
+                    if (speciesId < speciesIdMax)
+                    {
+                        speciesId++;
+                    }
+                    else
+                    {
+                        speciesId = 0;
+                    }
+
+                    for (int i = 0; i < gameData.Creatures.Count; i++)
+                    {
+                        if (gameData.Creatures[i].SpeciesId == speciesId)
+                        {
+                            gameData.FocusIndex = i;
+                            gameData.Focus = gameData.Creatures[gameData.FocusIndex];
+                        }
+                    }
                 }
-                gameData.Focus = gameData.Creatures[gameData.FocusIndex];
             }
             else
             {
-                gameData.FocusIndex = 0;
-                gameData.Focus = gameData.Creatures[gameData.FocusIndex];
+                if (gameData.FocusIndex > gameData.Creatures.Count - 1)
+                {
+                    gameData.FocusIndex = gameData.Creatures.Count - 1;
+                }
+
+                if (gameData.Focus != null && gameData.FocusIndex >= 0)
+                {
+                    if (gameData.FocusIndex == gameData.Creatures.Count - 1)
+                    {
+                        gameData.FocusIndex = 0;
+                    }
+                    else
+                    {
+                        gameData.FocusIndex++;
+                    }
+                    gameData.Focus = gameData.Creatures[gameData.FocusIndex];
+                }
+                else
+                {
+                    gameData.FocusIndex = 0;
+                    gameData.Focus = gameData.Creatures[gameData.FocusIndex];
+                }
             }
         }
 

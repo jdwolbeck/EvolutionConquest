@@ -207,18 +207,19 @@ namespace EvolutionConquest
                     {
                         _gameData.Creatures[i].IsAlive = false;
                         _gameData.DeadCreatures.Add(_gameData.Creatures[i]);
-                        //Drop all food on the ground randomly around the area
-                        for (int k = 0; k < _gameData.Creatures[k].UndigestedFood; k++)
-                        {
-                            SpawnFood(new Vector2(_gameData.Creatures[k].Position.X + _rand.Next(-5, 5), _gameData.Creatures[k].Position.Y + _rand.Next(-5, 5)));
-                        }
+                        //REMOVED To help with performance issues
+                        ////Drop all food on the ground randomly around the area
+                        //for (int k = 0; k < _gameData.Creatures[k].UndigestedFood; k++)
+                        //{
+                        //    SpawnFood(new Vector2(_gameData.Creatures[k].Position.X + _rand.Next(-5, 5), _gameData.Creatures[k].Position.Y + _rand.Next(-5, 5)));
+                        //}
                         _gameData.Creatures.RemoveAt(i);
                     }
                     //Check if we can lay a new egg
                     if (_gameData.Creatures[i].DigestedFood > 0 && _gameData.Creatures[i].TicksSinceLastEgg >= _gameData.Creatures[i].EggInterval)
                     {
                         _gameData.Creatures[i].DigestedFood--; //Costs one digested food to lay an egg
-                        Egg egg = _gameData.Creatures[i].LayEgg(_rand);
+                        Egg egg = _gameData.Creatures[i].LayEgg(_rand, _names, _gameData.Creatures);
                         //TODO handle this maybe in the Creature class
                         egg.Texture = _eggTexture;
                         _gameData.Eggs.Add(egg); //Add the new egg to gameData, the LayEgg function will calculate the Mutations
@@ -392,7 +393,7 @@ namespace EvolutionConquest
                 }
             }
             //Draw map statistics
-            string mapStats = "Alive Creatures: " + _gameData.Creatures.Count + ", Unique Species: " + _uniqueSpeciesCount + ", Dead Creatures: " + _gameData.DeadCreatures.Count + ", Eggs: " + _gameData.Eggs.Count + ", Map Food: " + _gameData.Food.Count;
+            string mapStats = "Alive Creatures: " + _gameData.Creatures.Count + ", Unique Species: " + _uniqueSpeciesCount + ", Dead Creatures: " + _gameData.DeadCreatures.Count + ", Eggs: " + _gameData.Eggs.Count + ", Map Food: " + _gameData.Food.Count + ".  Controls: [W][A][S][D] Camera Pan, [PageUp][PageDown] Iterate Creatures, [Shift] + [PageUp][PageDown] Iterate Species";
             _spriteBatch.DrawString(_diagFont, mapStats, new Vector2((_graphics.PreferredBackBufferWidth / 2) - (_diagFont.MeasureString(mapStats).X / 2), 10), Color.Black);
             _spriteBatch.End();
 
