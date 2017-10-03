@@ -144,4 +144,15 @@ public class GameData
             }
         }
     }
+    public void SetIndexPositionsForCreatures()
+    {
+        for (int i = 0; i < Creatures.Count; i++)
+        {
+            if (Creatures[i] == Focus)
+            {
+                FocusIndex = i;
+                break;
+            }
+        }
+    }
 }

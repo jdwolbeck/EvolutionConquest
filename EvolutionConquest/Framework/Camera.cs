@@ -198,6 +198,7 @@ public class Camera
         }
         if (inputState.IsNewKeyPress(Keys.PageDown, controllingPlayer, out playerIndex))
         {
+            gameData.SetIndexPositionsForCreatures(); //Need to call this to fix the FocusIndex value. Since we are removing creatures from the list the Index gets stale over time
             if (inputState.IsKeyPressed(Keys.LeftShift, controllingPlayer, out playerIndex))
             {
                 if (gameData.FocusIndex > gameData.Creatures.Count - 1)
@@ -207,6 +208,7 @@ public class Camera
                 else
                 {
                     int speciesId = gameData.Creatures[gameData.FocusIndex].SpeciesId;
+
                     if (speciesId > 0)
                     {
                         speciesId--;
@@ -214,6 +216,26 @@ public class Camera
                     else
                     {
                         speciesId = gameData.Creatures.Max(t => t.SpeciesId);
+                    }
+
+                    bool idExists = false;
+                    while (!idExists)
+                    {
+                        if (gameData.Creatures.Where(t => t.SpeciesId == speciesId).Count() <= 0)
+                        {
+                            if (speciesId > 0)
+                            {
+                                speciesId--;
+                            }
+                            else
+                            {
+                                speciesId = gameData.Creatures.Max(t => t.SpeciesId);
+                            }
+                        }
+                        else
+                        {
+                            idExists = true;
+                        }
                     }
 
                     for(int i = 0; i < gameData.Creatures.Count; i++)
@@ -254,6 +276,7 @@ public class Camera
         }
         else if (inputState.IsNewKeyPress(Keys.PageUp, controllingPlayer, out playerIndex))
         {
+            gameData.SetIndexPositionsForCreatures(); //Need to call this to fix the FocusIndex value. Since we are removing creatures from the list the Index gets stale over time
             if (inputState.IsKeyPressed(Keys.LeftShift, controllingPlayer, out playerIndex))
             {
                 if (gameData.FocusIndex > gameData.Creatures.Count - 1)
@@ -271,6 +294,26 @@ public class Camera
                     else
                     {
                         speciesId = 0;
+                    }
+
+                    bool idExists = false;
+                    while (!idExists)
+                    {
+                        if (gameData.Creatures.Where(t => t.SpeciesId == speciesId).Count() <= 0)
+                        {
+                            if (speciesId < speciesIdMax)
+                            {
+                                speciesId++;
+                            }
+                            else
+                            {
+                                speciesId = 0;
+                            }
+                        }
+                        else
+                        {
+                            idExists = true;
+                        }
                     }
 
                     for (int i = 0; i < gameData.Creatures.Count; i++)

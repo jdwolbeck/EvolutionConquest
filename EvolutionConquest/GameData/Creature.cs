@@ -320,6 +320,7 @@ public class Creature : SpriteBase
         info.Add("Cold Tolerance: " + ColdClimateTolerance);
         info.Add("Hot Tolerance: " + HotClimateTolerance);
         info.Add(" ");
+        info.Add("Species ID: " + SpeciesId);
         info.Add("Position: {X:" + ((int)Position.X).ToString().PadLeft(4,' ') + ", Y:" + ((int)Position.Y).ToString().PadLeft(4, ' '));
         info.Add("Direction: " + Direction);
         info.Add("Rotation: " + Rotation);
