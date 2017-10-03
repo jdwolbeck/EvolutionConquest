@@ -197,7 +197,7 @@ public class Creature : SpriteBase
         baby.HotClimateTolerance = HotClimateTolerance + Mutation(rand, 10 - ColdClimateTolerance);
         baby.Herbavore = Herbavore + Mutation(rand, 15);
         baby.Carnivore = Carnivore + Mutation(rand, 10);
-        baby.Omnivore = Omnivore + Mutation(rand, 10);
+        baby.Omnivore = Omnivore + Mutation(rand, 5);
         baby.Scavenger = Scavenger + Mutation(rand, 5);
 
         //Only iterate the Species/Strain if something that can Mutate has changed
