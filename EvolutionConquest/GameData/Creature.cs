@@ -275,9 +275,16 @@ public class Creature : SpriteBase
         if (Ancestors.Count > 0)
         {
             string ancestorsString = String.Empty;
-            for (int i = 0; i < Ancestors.Count; i++)
+            if (Ancestors.Count > 5)
             {
-                ancestorsString += Ancestors[i] + ", ";
+                ancestorsString += Ancestors[0] + ", " + Ancestors[1] + "..." + Ancestors[Ancestors.Count - 2] + ", " + Ancestors[Ancestors.Count - 1];
+            }
+            else
+            {
+                for (int i = 0; i < Ancestors.Count; i++)
+                {
+                    ancestorsString += Ancestors[i] + ", ";
+                }
             }
             ancestorsString = ancestorsString.Substring(0, ancestorsString.Length - 2);
             info.Add("Ancestors: " + ancestorsString);
