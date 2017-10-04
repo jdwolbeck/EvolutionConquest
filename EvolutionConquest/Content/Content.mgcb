@@ -20,3 +20,17 @@
 /processorParam:TextureFormat=Compressed
 /build:DiagnosticsFont.spritefont
 
+#begin TahomaBold.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:TahomaBold.spritefont
+
+#begin ArialBlack.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:ArialBlack.spritefont
+

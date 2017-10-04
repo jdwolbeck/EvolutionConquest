@@ -261,23 +261,12 @@ public class Creature : SpriteBase
         }
         else
         {
-            if (SpeciesStrain.Length > 15)
-            {
-                info.Add("Strain: " + SpeciesStrain.Replace(" ", ""));
-            }
-            else if (SpeciesStrain.Length > 30)
-            {
-                info.Add("Strain: " + SpeciesStrain.Replace(" ", "").Substring(0, 30) + "...");
-            }
-            else
-            {
-                info.Add("Strain: " + SpeciesStrain);
-            }
+            info.Add("Strain: " + SpeciesStrain.Replace(" ", ""));
         }
         if (Ancestors.Count > 0)
         {
             string ancestorsString = String.Empty;
-            if (Ancestors.Count > 5)
+            if (Ancestors.Count > 3)
             {
                 ancestorsString += Ancestors[0] + ", " + Ancestors[1] + "..." + Ancestors[Ancestors.Count - 1];
             }
@@ -291,7 +280,6 @@ public class Creature : SpriteBase
             ancestorsString = ancestorsString.Substring(0, ancestorsString.Length - 2);
             info.Add("Ancestors: " + ancestorsString);
         }
-        //info.Add("Strain Counter: " + BabySpeciesStrainCounter);
         info.Add("Generation: " + Generation);
         info.Add("Lifespan: " + Math.Round(Lifespan / 10.0, 1).ToString());
         info.Add("Age: " + Math.Round(ElapsedTicks / 10.0, 1).ToString());

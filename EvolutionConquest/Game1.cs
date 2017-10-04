@@ -16,6 +16,7 @@ namespace EvolutionConquest
         private InputState _inputState;
         private Player _player;
         private SpriteFont _diagFont;
+        private SpriteFont _panelHeaderFont;
         private int _diagTextHeight;
         //Game variables
         private GameData _gameData;
@@ -40,6 +41,7 @@ namespace EvolutionConquest
         private Chart _chart;
         private List<string> _controlsListText;
         //Constants
+        private const float SPRITE_FONT_SCALE = 0.5f;
         private const float TICKS_PER_SECOND = 30;
         private const int BORDER_WIDTH = 10;
         private const float INIT_FOOD_RATIO = 0.0001f;
@@ -75,6 +77,7 @@ namespace EvolutionConquest
             // Create a new SpriteBatch, which can be used to draw textures.
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
+            _panelHeaderFont = Content.Load<SpriteFont>("ArialBlack");
             _diagFont = Content.Load<SpriteFont>("DiagnosticsFont");
             _diagTextHeight = (int)Math.Ceiling(_diagFont.MeasureString("ABCDEFGHIJKLMNOPQRSTUVWXYZ[]").Y);
             _tickSeconds = TICKS_PER_SECOND;
@@ -219,6 +222,11 @@ namespace EvolutionConquest
                         //{
                         //    SpawnFood(new Vector2(_gameData.Creatures[k].Position.X + _rand.Next(-5, 5), _gameData.Creatures[k].Position.Y + _rand.Next(-5, 5)));
                         //}
+                        if (_gameData.Focus == _gameData.Creatures[i])
+                        {
+                            _gameData.Focus = null;
+                            _gameData.FocusIndex = -1;
+                        }
                         _gameData.Creatures.RemoveAt(i);
                     }
                     //Check if we can lay a new egg
@@ -419,7 +427,7 @@ namespace EvolutionConquest
         }
         private void DrawHighlightCreatures()
         {
-            if (_gameData.HighlightSpecies)
+            if (_gameData.HighlightSpecies && _gameData.Focus != null)
             {
                 int followedSpecies = _gameData.Focus.SpeciesId;
                 int borderWidth = 3;
@@ -443,7 +451,7 @@ namespace EvolutionConquest
         //Draw HUD Functions
         private void DrawHUD()
         {
-            _spriteBatch.Begin();
+            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null, null);
 
             DrawCreatureStatsPanel();
             DrawMapStatisctics();
@@ -456,7 +464,7 @@ namespace EvolutionConquest
         {
             if (_gameData.ShowCreatureStats && _gameData.Focus != null)
             {
-                DrawPanelWithText(_diagFont, "Creature Statistics", _diagFont, _gameData.Focus.GetCreatureInformation(), Global.Anchor.LeftCenter, (int)Math.Ceiling(_diagFont.MeasureString("Position: {X:-100.000000, Y:-100.000000}").X), 0, 20);
+                DrawPanelWithText(_panelHeaderFont, "Creature Statistics", _diagFont, _gameData.Focus.GetCreatureInformation(), Global.Anchor.LeftCenter, (int)Math.Ceiling(_diagFont.MeasureString("Position: {X:-100.000000, Y:-100.000000}").X), 0, 20);
             }
         }
         private void DrawMapStatisctics()
@@ -465,11 +473,11 @@ namespace EvolutionConquest
 
             if (_gameData.DeadCreatures.Count >= 1000)
             {
-                deadCreatures = Math.Round(_gameData.DeadCreatures.Count / 1000.0, 2).ToString("#,##0") + " k";
+                deadCreatures = Math.Round(_gameData.DeadCreatures.Count / 1000.0, 2).ToString("#,##0.00") + "k";
             }
             else if (_gameData.DeadCreatures.Count >= 1000000)
             {
-                deadCreatures = Math.Round(_gameData.DeadCreatures.Count / 1000000.0, 2).ToString("#,##0") + " m";
+                deadCreatures = Math.Round(_gameData.DeadCreatures.Count / 1000000.0, 2).ToString("#,##0.00") + "m";
             }
             else
             {
@@ -480,17 +488,21 @@ namespace EvolutionConquest
                 _uniqueSpeciesCount.ToString("#,##0") + ", Dead Creatures: " + deadCreatures + ", Eggs: " +
                 _gameData.Eggs.Count.ToString("#,##0") + ", Map Food: " + _gameData.Food.Count.ToString("#,##0");
 
-            _spriteBatch.DrawString(_diagFont, mapStats, new Vector2((_graphics.PreferredBackBufferWidth / 2) - (_diagFont.MeasureString(mapStats).X / 2), 10), Color.Black);
+            Vector2 textSize = _diagFont.MeasureString(mapStats);
+            Vector2 drawPos = new Vector2((_graphics.PreferredBackBufferWidth / 2) - (_diagFont.MeasureString(mapStats).X / 2), 10);
+
+            _spriteBatch.Draw(_whitePixel, new Rectangle((int)drawPos.X, (int)drawPos.Y, (int)textSize.X, (int)textSize.Y), Color.White);
+            _spriteBatch.DrawString(_diagFont, mapStats, drawPos, Color.Black);//, 0f, Vector2.Zero, SPRITE_FONT_SCALE, SpriteEffects.None, 1f);
         }
         private void DrawControlsPanel()
         {
             if (_gameData.ShowControls)
             {
-                DrawPanelWithText(_diagFont, "Controls", _diagFont, _controlsListText, Global.Anchor.TopRight, 0, 0, 20);
+                DrawPanelWithText(_panelHeaderFont, "Controls", _diagFont, _controlsListText, Global.Anchor.TopRight, 0, 0, 20);
             }
             else
             {
-                DrawPanelWithText(_diagFont, String.Empty, _diagFont, new List<string> { "[F11] Show Controls" }, Global.Anchor.TopRight, 0, 0, 20);
+                DrawPanelWithText(_panelHeaderFont, String.Empty, _diagFont, new List<string> { "[F11] Show Controls" }, Global.Anchor.TopRight, 0, 0, 20);
             }
         }
         private void DrawChartBorder()
@@ -601,7 +613,7 @@ namespace EvolutionConquest
             if (drawHeader)
             {
                 currentY += textSpacing;
-                _spriteBatch.DrawString(textFont, header, new Vector2(currentX, currentY), headerTextColor);
+                _spriteBatch.DrawString(_panelHeaderFont, header, new Vector2(currentX, currentY), headerTextColor);
                 currentY += headerTextHeight + (textSpacing * 3);
             }
 
