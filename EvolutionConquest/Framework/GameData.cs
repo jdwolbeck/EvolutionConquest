@@ -1,8 +1,6 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 public class GameData
 {
@@ -14,6 +12,7 @@ public class GameData
     public int FocusIndex { get; set; } //Camera focus index, this value is used when Paging between Creatures
     public List<SpeciesToCount> ChartData { get; set; }
     public List<SpeciesToCount> ChartDataTop { get; set; }
+    public GridData[,] MapGridData { get; set; }
     public bool ShowChart { get; set; }
     public bool ShowControls { get; set; }
     public bool HighlightSpecies { get; set; }
@@ -161,6 +160,48 @@ public class GameData
                 FocusIndex = i;
                 break;
             }
+        }
+    }
+    public void AddFoodToGrid(Food food)
+    {
+        foreach (Point p in food.GridPositions)
+        {
+            MapGridData[p.X, p.Y].Food.Add(food);
+        }
+    }
+    public void AddEggToGrid(Egg egg)
+    {
+        foreach (Point p in egg.GridPositions)
+        {
+            MapGridData[p.X, p.Y].Eggs.Add(egg);
+        }
+    }
+    public void AddCreatureToGrid(Creature creature)
+    {
+        foreach (Point p in creature.GridPositions)
+        {
+            MapGridData[p.X, p.Y].Creatures.Add(creature);
+        }
+    }
+    public void RemoveCreatureFromGrid(Creature creature, List<Point> toBeRemoved)
+    {
+        foreach (Point p in toBeRemoved)
+        {
+            MapGridData[p.X, p.Y].Creatures.Remove(creature);
+        }
+    }
+    public void RemoveFoodFromGrid(Food food, List<Point> toBeRemoved)
+    {
+        foreach (Point p in toBeRemoved)
+        {
+            MapGridData[p.X, p.Y].Food.Remove(food);
+        }
+    }
+    public void RemoveEggFromGrid(Egg egg, List<Point> toBeRemoved)
+    {
+        foreach (Point p in toBeRemoved)
+        {
+            MapGridData[p.X, p.Y].Eggs.Remove(egg);
         }
     }
 }

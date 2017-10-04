@@ -18,6 +18,10 @@ namespace EvolutionConquest
         private SpriteFont _diagFont;
         private SpriteFont _panelHeaderFont;
         private int _diagTextHeight;
+        private int _frames;
+        private int _fps;
+        private double _elapsedSeconds;
+        private double _totalElapsedSeconds;
         //Game variables
         private GameData _gameData;
         private Texture2D _whitePixel;
@@ -44,8 +48,11 @@ namespace EvolutionConquest
         private const float SPRITE_FONT_SCALE = 0.5f;
         private const float TICKS_PER_SECOND = 30;
         private const int BORDER_WIDTH = 10;
+        private const int GRID_CELL_SIZE = 20; //Seems to be the sweet spot for a 5,000 x 5,000 map based on the texture sizes we have so far
         private const float INIT_FOOD_RATIO = 0.0001f;
-        private const float INIT_STARTING_CREATURE_RATIO = 0.00001f;
+        private const float INIT_STARTING_CREATURE_RATIO = 0.00005f;
+        //private const float INIT_FOOD_RATIO = 0.01f; //Performance test value
+        //private const float INIT_STARTING_CREATURE_RATIO = 0.0005f; //Performance test value
         private const float FOOD_GENERATION_INTERVAL_SECONDS = 0.05f;
 
         public Game1()
@@ -59,6 +66,10 @@ namespace EvolutionConquest
             _elapsedTimeSinceFoodGeneration = 0;
             _elapsedTicksSinceSecondProcessing = 0;
             _speciesIdCounter = 0;
+            _fps = 0;
+            _frames = 0;
+            _elapsedSeconds = 0.0;
+            _totalElapsedSeconds = 0.0;
 
             IsMouseVisible = true;
 
@@ -105,6 +116,31 @@ namespace EvolutionConquest
             _borders.RightWall = new Vector2(Global.WORLD_SIZE, 0);
             _borders.TopWall = new Vector2(0, 0);
             _borders.BottomWall = new Vector2(0, Global.WORLD_SIZE);
+
+            //Initialize the Grid
+            int gridWidth = (int)Math.Ceiling((double)Global.WORLD_SIZE / GRID_CELL_SIZE);
+
+            _gameData.MapGridData = new GridData[gridWidth, gridWidth];
+
+            //Loop through grid and set Rectangle on each cell, named iterators x,y to help avoid confusion
+            for (int y = 0; y < _gameData.MapGridData.GetLength(0); y++)
+            {
+                for (int x = 0; x < _gameData.MapGridData.GetLength(1); x++)
+                {
+                    _gameData.MapGridData[x, y] = new GridData();
+                    _gameData.MapGridData[x, y].Creatures = new List<Creature>();
+                    _gameData.MapGridData[x, y].Eggs = new List<Egg>();
+                    _gameData.MapGridData[x, y].Food = new List<Food>();
+
+                    Rectangle rec = new Rectangle();
+                    rec.X = x * GRID_CELL_SIZE;
+                    rec.Y = y * GRID_CELL_SIZE;
+                    rec.Width = GRID_CELL_SIZE;
+                    rec.Height = GRID_CELL_SIZE;
+
+                    _gameData.MapGridData[x, y].CellRectangle = rec;
+                }
+            }
 
             //Load in random food
             int amountOfFood = (int)(((Global.WORLD_SIZE * Global.WORLD_SIZE) / _foodTexture.Width) * INIT_FOOD_RATIO);
@@ -204,6 +240,7 @@ namespace EvolutionConquest
                         //Assign texture to the creature
                         _gameData.Eggs[i].Creature.Texture = _basicCreatureTexture;
                         _gameData.Creatures.Add(_gameData.Eggs[i].Creature);
+                        _gameData.RemoveEggFromGrid(_gameData.Eggs[i], _gameData.Eggs[i].GridPositions);
                         _gameData.Eggs.RemoveAt(i);
                     }
                 }
@@ -227,7 +264,9 @@ namespace EvolutionConquest
                             _gameData.Focus = null;
                             _gameData.FocusIndex = -1;
                         }
+                        _gameData.RemoveCreatureFromGrid(_gameData.Creatures[i], _gameData.Creatures[i].GridPositions);
                         _gameData.Creatures.RemoveAt(i);
+                        continue;
                     }
                     //Check if we can lay a new egg
                     if (_gameData.Creatures[i].DigestedFood > 0 && _gameData.Creatures[i].TicksSinceLastEgg >= _gameData.Creatures[i].EggInterval)
@@ -236,6 +275,8 @@ namespace EvolutionConquest
                         Egg egg = _gameData.Creatures[i].LayEgg(_rand, ref _names, _gameData.Creatures);
                         //TODO handle this maybe in the Creature class
                         egg.Texture = _eggTexture;
+                        egg.GridPositions = GetGridPositionsForSpriteBase(egg);
+                        _gameData.AddEggToGrid(egg);
                         _gameData.Eggs.Add(egg); //Add the new egg to gameData, the LayEgg function will calculate the Mutations
                     }
                 }
@@ -275,20 +316,16 @@ namespace EvolutionConquest
                     }
 
                     //Food collision
-                    bool creatureBoundsCalculated = false;
-                    for (int k = 0; k < _gameData.Food.Count; k++)
+                    foreach (Point p in _gameData.Creatures[i].GridPositions)
                     {
-                        if (Vector2.Distance(_gameData.Food[k].Position, _gameData.Creatures[i].Position) <= _gameData.Creatures[i].TextureCollideDistance)
-                        {
-                            if (!creatureBoundsCalculated) //Only calculate the bounds for the creature once
+                        for(int k = (_gameData.MapGridData[p.X, p.Y].Food.Count - 1); k >= 0; k--)
+                        { 
+                            if (_gameData.Creatures[i].Bounds.Intersects(_gameData.MapGridData[p.X, p.Y].Food[k].Bounds))
                             {
-                                creatureBoundsCalculated = true;
-                                _gameData.Creatures[i].CalculateBounds();
-                            }
-                            if (_gameData.Creatures[i].Bounds.Intersects(_gameData.Food[k].Bounds))
-                            {
+                                Food tmpFood = _gameData.MapGridData[p.X, p.Y].Food[k];
                                 _gameData.Creatures[i].UndigestedFood++;
-                                _gameData.Food.RemoveAt(k);
+                                _gameData.RemoveFoodFromGrid(tmpFood, _gameData.MapGridData[p.X, p.Y].Food[k].GridPositions);
+                                _gameData.Food.Remove(tmpFood);
                             }
                         }
                     }
@@ -297,18 +334,28 @@ namespace EvolutionConquest
                     {
                         //Move the creature
                         _gameData.Creatures[i].Position += _gameData.Creatures[i].Direction * ((_gameData.Creatures[i].Speed / 10f) * (_currentTicksPerSecond / TICKS_PER_SECOND)) * TICKS_PER_SECOND * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                        _gameData.Creatures[i].GridPositions = GetGridPositionsForSpriteBase(_gameData.Creatures[i]);
+
+                        if (_gameData.Creatures[i].CurrentGridPositionsForCompare != _gameData.Creatures[i].OldGridPositionsForCompare)
+                        {
+                            List<Point> delta = _gameData.Creatures[i].GetGridDelta();
+                            if (delta.Count > 0)
+                            {
+                                _gameData.RemoveCreatureFromGrid(_gameData.Creatures[i], delta);
+                            }
+                        }
                     }
                 }
 
-                //Movement
-                for (int i = 0; i < _gameData.Creatures.Count; i++)
-                {
-                    if (_gameData.Creatures[i].IsAlive)
-                    {
-                        //Move the creature
-                        _gameData.Creatures[i].Position += _gameData.Creatures[i].Direction * ((_gameData.Creatures[i].Speed / 10f) * (_currentTicksPerSecond / TICKS_PER_SECOND)) * TICKS_PER_SECOND * (float)gameTime.ElapsedGameTime.TotalSeconds;
-                    }
-                }
+                ////Movement
+                //for (int i = 0; i < _gameData.Creatures.Count; i++)
+                //{
+                //    if (_gameData.Creatures[i].IsAlive)
+                //    {
+                //        //Move the creature
+                //        _gameData.Creatures[i].Position += _gameData.Creatures[i].Direction * ((_gameData.Creatures[i].Speed / 10f) * (_currentTicksPerSecond / TICKS_PER_SECOND)) * TICKS_PER_SECOND * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                //    }
+                //}
 
                 //Every second processing only when it is not a TICK
                 if (_elapsedTicksSinceSecondProcessing >= TICKS_PER_SECOND * 5)
@@ -372,6 +419,20 @@ namespace EvolutionConquest
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.White);
+
+            ////FPS Counter
+            //_totalElapsedSeconds += gameTime.ElapsedGameTime.TotalSeconds;
+            //if (_elapsedSeconds >= 1)
+            //{
+            //    _fps = _frames;
+            //    _frames = 0;
+            //    _elapsedSeconds = 0;
+            //}
+            //_frames++;
+            //_elapsedSeconds += gameTime.ElapsedGameTime.TotalSeconds;
+            //
+            //if(_fps >= 30)
+            //    if(1==1)
 
             // === DRAW WITHIN THE WORLD ===
             DrawWorldObjects();
@@ -457,6 +518,7 @@ namespace EvolutionConquest
             DrawMapStatisctics();
             DrawControlsPanel();
             DrawChartBorder();
+            //DrawFPS();
 
             _spriteBatch.End();
         }
@@ -513,6 +575,10 @@ namespace EvolutionConquest
 
                 _spriteBatch.Draw(_whitePixel, new Rectangle(_chart.Location.X - borderDepth, _chart.Location.Y - borderDepth, _chart.Width + (borderDepth * 2), _chart.Height + (borderDepth * 2)), Color.Black);
             }
+        }
+        private void DrawFPS()
+        {
+            _spriteBatch.DrawString(_diagFont, "FPS: " + _fps + "   " + (int)_totalElapsedSeconds, new Vector2(5, 5), Color.Black);
         }
         private void DrawPanelWithText(SpriteFont headerFont, string header, SpriteFont textFont, List<string> text, Global.Anchor anchor, int lockedWidthValue, int lockedHeightValue, int screenBuffer)
         {
@@ -625,8 +691,62 @@ namespace EvolutionConquest
         }
 
         //Helper functions
+        private List<Point> GetGridPositionsForSpriteBase(SpriteBase sb)
+        {
+            List<Point> gridPositions = new List<Point>();
+            
+            //Find the exact grid position we are in then check the surrounding grid locations
+            Point exactGridPos = sb.CalculateGridPosition(GRID_CELL_SIZE);
+            gridPositions.Add(exactGridPos);
+
+            if (exactGridPos.X > 0 && sb.Bounds.Intersects(_gameData.MapGridData[exactGridPos.X - 1, exactGridPos.Y].CellRectangle))
+            {
+                gridPositions.Add(new Point(exactGridPos.X - 1, exactGridPos.Y));
+                if (exactGridPos.Y > 0 && sb.Bounds.Intersects(_gameData.MapGridData[exactGridPos.X - 1, exactGridPos.Y - 1].CellRectangle))
+                {
+                    gridPositions.Add(new Point(exactGridPos.X - 1, exactGridPos.Y - 1));
+                }
+                else if (exactGridPos.Y < _gameData.MapGridData.GetLength(1) - 1 && sb.Bounds.Intersects(_gameData.MapGridData[exactGridPos.X - 1, exactGridPos.Y + 1].CellRectangle))
+                {
+                    gridPositions.Add(new Point(exactGridPos.X - 1, exactGridPos.Y + 1));
+                }
+            }
+            else if (exactGridPos.X < _gameData.MapGridData.GetLength(0) - 1 && sb.Bounds.Intersects(_gameData.MapGridData[exactGridPos.X + 1, exactGridPos.Y].CellRectangle))
+            {
+                gridPositions.Add(new Point(exactGridPos.X + 1, exactGridPos.Y));
+                if (exactGridPos.Y > 0 && sb.Bounds.Intersects(_gameData.MapGridData[exactGridPos.X + 1, exactGridPos.Y - 1].CellRectangle))
+                {
+                    gridPositions.Add(new Point(exactGridPos.X + 1, exactGridPos.Y - 1));
+                }
+                else if (exactGridPos.Y < _gameData.MapGridData.GetLength(1) - 1 && sb.Bounds.Intersects(_gameData.MapGridData[exactGridPos.X + 1, exactGridPos.Y + 1].CellRectangle))
+                {
+                    gridPositions.Add(new Point(exactGridPos.X + 1, exactGridPos.Y + 1));
+                }
+            }
+
+            if (exactGridPos.Y > 0 && sb.Bounds.Intersects(_gameData.MapGridData[exactGridPos.X, exactGridPos.Y - 1].CellRectangle))
+            {
+                gridPositions.Add(new Point(exactGridPos.X, exactGridPos.Y - 1));
+            }
+            else if (exactGridPos.Y < _gameData.MapGridData.GetLength(1) - 1 && sb.Bounds.Intersects(_gameData.MapGridData[exactGridPos.X, exactGridPos.Y + 1].CellRectangle))
+            {
+                gridPositions.Add(new Point(exactGridPos.X, exactGridPos.Y + 1));
+            }
+
+            //Move the Current Grid position string to the Old
+            string gridPosition = String.Empty;
+            foreach (Point p in gridPositions)
+            {
+                gridPosition += p.X + "," + p.Y + " ";
+            }
+
+            sb.SetOldGridPos(gridPosition);
+
+            return gridPositions;
+        }
         private void SpawnFood()
         {
+            //SpawnFood(new Vector2(100, 100));
             SpawnFood(new Vector2(_rand.Next(_foodTexture.Width, Global.WORLD_SIZE - _foodTexture.Width), _rand.Next(_foodTexture.Height, Global.WORLD_SIZE - _foodTexture.Height)));
         }
         private void SpawnFood(Vector2 position)
@@ -634,9 +754,10 @@ namespace EvolutionConquest
             Food food = new Food();
             food.Texture = _foodTexture;
             food.Position = position;
-            food.CalculateBounds();
+            food.GridPositions = GetGridPositionsForSpriteBase(food);
 
             _gameData.Food.Add(food);
+            _gameData.AddFoodToGrid(food);
         }
         private void SpawnStartingCreature()
         {
@@ -644,7 +765,10 @@ namespace EvolutionConquest
             creature.InitNewCreature(_rand, ref _names, _speciesIdCounter);
             creature.Texture = _basicCreatureTexture;
             creature.Position = new Vector2(_rand.Next(creature.Texture.Width, Global.WORLD_SIZE - creature.Texture.Width), _rand.Next(creature.Texture.Height, Global.WORLD_SIZE - creature.Texture.Height));
+            creature.GridPositions = GetGridPositionsForSpriteBase(creature);
+
             _gameData.Creatures.Add(creature);
+            _gameData.AddCreatureToGrid(creature);
 
             _speciesIdCounter++;
         }
