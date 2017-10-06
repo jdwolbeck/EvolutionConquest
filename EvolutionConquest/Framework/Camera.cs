@@ -198,6 +198,11 @@ public class Camera
         }
         if (inputState.IsNewKeyPress(Keys.PageDown, controllingPlayer, out playerIndex))
         {
+            if (gameData.FocusIndex < 0)
+            {
+                gameData.FocusIndex = 0;
+            }
+
             gameData.SetIndexPositionsForCreatures(); //Need to call this to fix the FocusIndex value. Since we are removing creatures from the list the Index gets stale over time
             if (inputState.IsKeyPressed(Keys.LeftShift, controllingPlayer, out playerIndex))
             {
@@ -238,7 +243,7 @@ public class Camera
                         }
                     }
 
-                    for(int i = 0; i < gameData.Creatures.Count; i++)
+                    for (int i = 0; i < gameData.Creatures.Count; i++)
                     {
                         if (gameData.Creatures[i].SpeciesId == speciesId)
                         {
@@ -276,6 +281,11 @@ public class Camera
         }
         else if (inputState.IsNewKeyPress(Keys.PageUp, controllingPlayer, out playerIndex))
         {
+            if (gameData.FocusIndex < 0)
+            {
+                gameData.FocusIndex = gameData.Creatures.Count - 1;
+            }
+
             gameData.SetIndexPositionsForCreatures(); //Need to call this to fix the FocusIndex value. Since we are removing creatures from the list the Index gets stale over time
             if (inputState.IsKeyPressed(Keys.LeftShift, controllingPlayer, out playerIndex))
             {

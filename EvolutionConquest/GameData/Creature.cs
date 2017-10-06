@@ -16,13 +16,17 @@ public class Creature : SpriteBase
     /// Adding new Properties make sure to Add to the following: Init, LayEgg, IsSameAs, ZeroOutNegativeValues
     /// </summary>
 
+    public int CreatureId { get; set; }
     public bool IsAlive { get; set; }
-    public List<string> Ancestors { get; set; } //Chain of Ancestors (Starts blank)
+    public List<string> Ancestors { get; set; } //Chain of Ancestors (Starts blank) 
+    public List<int> AncestorIds { get; set; }
     public bool IsChangingSpecies { get; set; } //Is the creature transitioning to a new species
     public string NewSpeciesName { get; set; } //Name of new species for these offspring
     public int NewSpeciesId { get; set; } //ID for the new species
     public int SpeciesId { get; set; } //Unique ID for species
     public string Species { get; set; } //Random name assigned to specied
+    public int OriginalSpeciesId { get; set; }
+    public string OriginalSpecies { get; set; }
     public string SpeciesStrain { get; set; } //This will keep track of specific strains within a species
     public string BabySpeciesStrainCounter { get; set; } //This is used for assigning babies with their strain
     public int Generation { get; set; } //How many generations since the first creature
@@ -80,36 +84,43 @@ public class Creature : SpriteBase
     public float ColdClimateTolerance { get; set; } //How well the creature can handle cold parts of the map before needing to move to neutral
     public float HotClimateTolerance { get; set; } //How well the creature can handle hot parts of the map before needing to move to neutral
 
+    public const string CREATURE_TABLE_NAME = "Creatures";
+    public const string ANCESTORS_TABLE_NAME = "Ancestors";
     public const float EGG_INTERVAL_INIT_MIN = 400;
     public const float EGG_INTERVAL_INIT_MAX = 800;
-    public const float EGG_INCUBATION_INIT_MIN = 300;
-    public const float EGG_INCUBATION_INIT_MAX = 800;
+    public const float EGG_INCUBATION_INIT_MIN = 400;
+    public const float EGG_INCUBATION_INIT_MAX = 1000;
     public const float FOOD_DIGESTION_INIT_MIN = 50;
     public const float FOOD_DIGESTION_INIT_MAX = 250;
     public const float SPEED_INIT_MIN = 10;
     public const float SPEED_INIT_MAX = 45;
-    public const float LIFESPAN_INIT_MIN = 1000;
+    public const float LIFESPAN_INIT_MIN = 900;
     public const float LIFESPAN_INIT_MAX = 1200;
     public const float HERBAVORE_INIT_MIN = 3;
     public const float HERBAVORE_INIT_MAX = 20;
     public const float COLD_TOLERANCE_INIT_MIN = 0;
     public const float COLD_TOLERANCE_INIT_MAX = 10;
     public const float HOT_TOLERANCE_INIT_MIN = 0;
-    public const float HOT_TOLERANCE_INIT_MAX = 5;
+    public const float HOT_TOLERANCE_INIT_MAX = 10;
     public const float ENERGY_INIT = 500;
 
     public Creature()
     {
         Ancestors = new List<string>();
+        AncestorIds = new List<int>();
     }
 
-    public void InitNewCreature(Random rand, ref Names names, int speciesId)
+    public void InitNewCreature(Random rand, ref Names names, int speciesId, ref int creatureIdCtr)
     {
+        creatureIdCtr++;
+        CreatureId = creatureIdCtr;
         IsAlive = true;
         IsChangingSpecies = false;
         NewSpeciesName = String.Empty;
         SpeciesId = speciesId;
         Species = names.GetRandomName(rand);
+        OriginalSpeciesId = SpeciesId;
+        OriginalSpecies = Species;
         SpeciesStrain = String.Empty;
         BabySpeciesStrainCounter = "A";
         Generation = 0;
@@ -154,7 +165,7 @@ public class Creature : SpriteBase
             DigestedFood++;
         }
     }
-    public Egg LayEgg(Random rand, ref Names names, List<Creature> gameDataCreatureList)
+    public Egg LayEgg(Random rand, ref Names names, List<Creature> gameDataCreatureList, ref int creatureIdCtr)
     {
         Egg egg = new Egg();
         Creature baby = new Creature();
@@ -162,7 +173,10 @@ public class Creature : SpriteBase
         TicksSinceLastEgg = 0;
         EggsCreated++;
 
+        creatureIdCtr++;
+        baby.CreatureId = creatureIdCtr;
         baby.Ancestors = CopyAncestorList(Ancestors);
+        baby.AncestorIds = CopyAncestorIdsList(AncestorIds);
         baby.IsAlive = true;
         baby.IsChangingSpecies = false;
         baby.NewSpeciesId = -1;
@@ -171,6 +185,8 @@ public class Creature : SpriteBase
         baby.Position = Position;
         baby.SpeciesId = SpeciesId;
         baby.Species = Species;
+        baby.OriginalSpecies = OriginalSpecies;
+        baby.OriginalSpeciesId = OriginalSpeciesId;
         baby.BabySpeciesStrainCounter = "A";
         baby.Generation = Generation + 1;
         baby.UndigestedFood = 0;
@@ -212,10 +228,12 @@ public class Creature : SpriteBase
                     IsChangingSpecies = true;
                 }
                 baby.Ancestors.Add(Species);
+                baby.AncestorIds.Add(SpeciesId);
                 baby.Species = NewSpeciesName;
                 baby.SpeciesId = NewSpeciesId;
                 baby.SpeciesStrain = BabySpeciesStrainCounter;
 
+                #region RomanNumerals
                 ///Roman Numeral at the end of Species name does not work
                 //int romanNumeralIndex = baby.Species.IndexOf(' ');
                 //if (romanNumeralIndex > 0) //Increment Roman numeral of we Detect a space
@@ -229,6 +247,7 @@ public class Creature : SpriteBase
                 //{
                 //    baby.Species = baby.Species + " II";
                 //}
+                #endregion
             }
             else
             {
@@ -317,6 +336,99 @@ public class Creature : SpriteBase
 
         return info;
     }
+    public List<string> GetCreatureStatisticsSQL(int seed, int sessionID, float creatureRatio, float foodRatio, double gameTimeMinutes)
+    {
+        List<string> sqlStatements = new List<string>();
+
+        string creatureSql = String.Empty;
+
+        creatureSql += "Insert into " + CREATURE_TABLE_NAME + " (" +
+            "RunTime," +
+            "GameSeed," +
+            "SessionID," +
+            "MapSize," +
+            "CreatureRatio," +
+            "FoodRatio," +
+            "IsAlive," +
+            "CreatureID," +
+            "CreatureName," +
+            "SpeciesID," +
+            "SpeciesName," +
+            "SpeciesStrain," +
+            "OriginalSpeciesID," +
+            "OriginalSpeciesName," +
+            "Generation," +
+            "FoodDigestionRate," +
+            "EggInterval," +
+            "EggIncubation," +
+            "EggCamo," +
+            "EggToxicity," +
+            "EggsCreatedTotal," +
+            "Speed," +
+            "LifeSpan," +
+            "Sight," +
+            "Attraction," +
+            "Camo," +
+            "Cloning," +
+            "Herbavore," +
+            "Carnivore," +
+            "Omnivore," +
+            "Scavenger," +
+            "ColdClimateTolerance," +
+            "HotClimateTolerance) Values (";
+        creatureSql += Math.Round(gameTimeMinutes,4) + ",";
+        creatureSql += seed + ",";
+        creatureSql += sessionID + ",";
+        creatureSql += Global.WORLD_SIZE + ",";
+        creatureSql += Math.Round(creatureRatio, 10) + ",";
+        creatureSql += Math.Round(foodRatio, 10) + ",";
+        creatureSql += "'" + IsAlive + "',";
+        creatureSql += CreatureId + ",";
+        creatureSql += "'" + CreatureId + "',"; //At the momemnt we do not carry an individual creature name. Just use the ID for now
+        creatureSql += SpeciesId + ",";
+        creatureSql += "'" + Species + "',";
+        creatureSql += "'" + SpeciesStrain + "',";
+        creatureSql += OriginalSpeciesId + ",";
+        creatureSql += "'" + OriginalSpecies + "',";
+        creatureSql += Generation + ",";
+        creatureSql += Math.Round(FoodDigestion, 4) + ",";
+        creatureSql += Math.Round(EggInterval, 4) + ",";
+        creatureSql += Math.Round(EggIncubation, 4) + ",";
+        creatureSql += Math.Round(EggCamo, 4) + ",";
+        creatureSql += Math.Round(EggToxicity, 4) + ",";
+        creatureSql += EggsCreated + ",";
+        creatureSql += Math.Round(Speed, 4) + ",";
+        creatureSql += Math.Round(Lifespan, 4) + ",";
+        creatureSql += Math.Round(Sight, 4) + ",";
+        creatureSql += Math.Round(Attraction, 4) + ",";
+        creatureSql += Math.Round(Camo, 4) + ",";
+        creatureSql += Math.Round(Cloning, 4) + ",";
+        creatureSql += Math.Round(Herbavore, 4) + ",";
+        creatureSql += Math.Round(Carnivore, 4) + ",";
+        creatureSql += Math.Round(Omnivore, 4) + ",";
+        creatureSql += Math.Round(Scavenger, 4) + ",";
+        creatureSql += Math.Round(ColdClimateTolerance, 4) + ",";
+        creatureSql += Math.Round(HotClimateTolerance, 4);
+        creatureSql += ")";
+
+        sqlStatements.Add(creatureSql);
+
+        for (int i = 0; i < AncestorIds.Count; i++)
+        {
+            string ancestorSQL = String.Empty;
+
+            ancestorSQL += "Insert into " + ANCESTORS_TABLE_NAME + "(SessionID,CreatureID,AncestorID,AncestorName) Values (";
+            ancestorSQL += sessionID + ",";
+            ancestorSQL += CreatureId + ",";
+            ancestorSQL += AncestorIds[i] + ",";
+            ancestorSQL += "'" + Ancestors[i] + "'";
+            ancestorSQL += ")";
+
+            sqlStatements.Add(ancestorSQL);
+        }
+
+        return sqlStatements;
+    }
 
     //Helper functions
     private float Mutation(Random rand, float mutationChance)
@@ -392,6 +504,17 @@ public class Creature : SpriteBase
     private List<string> CopyAncestorList(List<string> toCopyList)
     {
         List<string> newList = new List<string>();
+
+        for (int i = 0; i < toCopyList.Count; i++)
+        {
+            newList.Add(toCopyList[i]);
+        }
+
+        return newList;
+    }
+    private List<int> CopyAncestorIdsList(List<int> toCopyList)
+    {
+        List<int> newList = new List<int>();
 
         for (int i = 0; i < toCopyList.Count; i++)
         {
