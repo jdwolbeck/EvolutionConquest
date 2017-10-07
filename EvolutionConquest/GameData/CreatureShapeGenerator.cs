@@ -90,7 +90,7 @@ public class CreatureShapeGenerator
         colorList.Add(Color.Transparent);
         //Layer5
         colorList.Add(Color.Transparent);
-        colorList.Add(Color.White);
+        colorList.Add(Color.Transparent);
         colorList.Add(Color.Black);
         colorList.Add(Color.White);
         colorList.Add(Color.White);
@@ -99,11 +99,11 @@ public class CreatureShapeGenerator
         colorList.Add(Color.White);
         colorList.Add(Color.White);
         colorList.Add(Color.Black);
-        colorList.Add(Color.White);
+        colorList.Add(Color.Transparent);
         colorList.Add(Color.Transparent);
         //Layer6
         colorList.Add(Color.Transparent);
-        colorList.Add(Color.White);
+        colorList.Add(Color.Transparent);
         colorList.Add(Color.Black);
         colorList.Add(Color.White);
         colorList.Add(Color.White);
@@ -112,7 +112,7 @@ public class CreatureShapeGenerator
         colorList.Add(Color.White);
         colorList.Add(Color.White);
         colorList.Add(Color.Black);
-        colorList.Add(Color.White);
+        colorList.Add(Color.Transparent);
         colorList.Add(Color.Transparent);
         //Layer7
         colorList.Add(Color.Transparent);
@@ -168,7 +168,7 @@ public class CreatureShapeGenerator
         colorList.Add(Color.Transparent);
         //Layer11
         colorList.Add(Color.Transparent);
-        colorList.Add(Color.White);
+        colorList.Add(Color.Transparent);
         colorList.Add(Color.Black);
         colorList.Add(Color.Black);
         colorList.Add(Color.Black);
@@ -177,7 +177,7 @@ public class CreatureShapeGenerator
         colorList.Add(Color.Black);
         colorList.Add(Color.Black);
         colorList.Add(Color.Black);
-        colorList.Add(Color.White);
+        colorList.Add(Color.Transparent);
         colorList.Add(Color.Transparent);
         //Layer12
         colorList.Add(Color.Transparent);

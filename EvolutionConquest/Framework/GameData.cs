@@ -17,6 +17,7 @@ public class GameData
     public bool ShowControls { get; set; }
     public bool HighlightSpecies { get; set; }
     public bool ShowCreatureStats { get; set; }
+    public bool ShowFoodStrength { get; set; }
 
     private const int CREATURES_COUNT_FOR_CHART = 10;
 
@@ -34,6 +35,7 @@ public class GameData
         ShowControls = true;
         HighlightSpecies = false;
         ShowCreatureStats = true;
+        ShowFoodStrength = false;
     }
 
     public int GetUniqueSpeciesCount()

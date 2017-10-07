@@ -19,6 +19,7 @@ public class Global
     };
 
     public const int WORLD_SIZE = 5000;
+    public const int CLIMATE_HEIGHT_PERCENT = 20;
     public static readonly Camera Camera = new Camera();
     //https://stackoverflow.com/questions/1011732/iterating-through-the-alphabet-c-sharp-a-caz
     public static string GetNextBase26(string a)

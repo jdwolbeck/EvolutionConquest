@@ -10,23 +10,29 @@ public class Creature : SpriteBase
 {
     private Vector2 _direction;
     private float _rotation;
-    int _undigestedFood;
+    private int _undigestedFood;
+    private float _coldClimateTolerance;
+    private float _hotClimateTolerance;
 
     /// <summary>
     /// Adding new Properties make sure to Add to the following: Init, LayEgg, IsSameAs, ZeroOutNegativeValues
     /// </summary>
 
+    public int CreatureId { get; set; }
     public bool IsAlive { get; set; }
-    public List<string> Ancestors { get; set; } //Chain of Ancestors (Starts blank)
+    public string DeathCause { get; set; }
+    public List<string> Ancestors { get; set; } //Chain of Ancestors (Starts blank) 
+    public List<int> AncestorIds { get; set; }
     public bool IsChangingSpecies { get; set; } //Is the creature transitioning to a new species
     public string NewSpeciesName { get; set; } //Name of new species for these offspring
     public int NewSpeciesId { get; set; } //ID for the new species
     public int SpeciesId { get; set; } //Unique ID for species
     public string Species { get; set; } //Random name assigned to specied
+    public int OriginalSpeciesId { get; set; }
+    public string OriginalSpecies { get; set; } //The starting species, this is to help with Data analysis
     public string SpeciesStrain { get; set; } //This will keep track of specific strains within a species
     public string BabySpeciesStrainCounter { get; set; } //This is used for assigning babies with their strain
     public int Generation { get; set; } //How many generations since the first creature
-    public Vector3 WorldPosition { get; set; } //Projected position on the world. Store this here to save processing
     public Vector2 Direction
     {
         get { return _direction; }
@@ -45,18 +51,16 @@ public class Creature : SpriteBase
             Direction.Normalize();
         }
     }
-    public Vector2[] Verticies { get; set; } //Design used to draw the creature
     public int UndigestedFood
     {
         get { return _undigestedFood; }
         set
         {
             _undigestedFood = value;
-            TotalFoodEaten++;
         }
     } //Food count waiting to be digested
     public int DigestedFood { get; set; } //Food count that has been digested
-    public float FoodDigestion { get; set; } //How quickly food can be digested and converted into an egg
+    public float FoodDigestion { get; set; } //How quickly food can be digested and converted into an egg, Also the longer it takes the more Energy the food will give
     public int TotalFoodEaten { get; set; } //Statistical count of how many food were eaten
     public int TicksSinceLastEgg { get; set; } //The amount of Game Ticks since the last egg was created
     public int TicksSinceLastDigestedFood { get; set; } //The amount of Game Ticks since the last food was digested
@@ -70,19 +74,56 @@ public class Creature : SpriteBase
     public float Energy { get; set; } //Energy is spent by moving and earned by eating
     public float ElapsedTicks { get; set; } //How many ticks the creature has been alive
     public float Sight { get; set; } //Allows the creature to adjust path if target is within this many units
+    public int TicksSinceLastVisionCheck { get; set; } //How long since we evaluated vision
+    public int TicksBetweenVisionChecks { get; set; } //How many ticks go by before we can evaluate sight 
     public float Attraction { get; set; }
-    public float Herbavore { get; set; } //This is mainly used to create a Herbavore to Carnivore ratio to determine when the creature has become a Carnivore
+    public float Herbavore { get; set; } //This controls how strong of food the creature can eat. The food strength simulates food that is difficult to eat or hard to reach. This encourages positive mutations to reach stronger food
     public float Carnivore { get; set; } //Can eat other creatures with Carnivore level of (Carnivore lvl / 2 - 5) or less. This will be the only means of food
     public float Omnivore { get; set; } //Can eat both creatures and plants
+    public bool IsHerbavore { get; set; }
+    public bool IsCarnivore { get; set; }
+    public bool IsScavenger { get; set; }
+    public bool IsOmnivore { get; set; } //Probably no point to this since we also mark the IsHerb and IsCarn flags as well
     public float Scavenger { get; set; } //Can eat other creatures eggs including Scavenger eggs. This will be the only means of food
     public float Camo { get; set; } //Hidden from all creatures with a Camo level less than your level
     public float Cloning { get; set; } //Chance for Spontaneous cloning to occur
-    public float ColdClimateTolerance { get; set; } //How well the creature can handle cold parts of the map before needing to move to neutral
-    public float HotClimateTolerance { get; set; } //How well the creature can handle hot parts of the map before needing to move to neutral
+    public float ColdClimateTolerance
+    {
+        get
+        {
+            if (_coldClimateTolerance >= _hotClimateTolerance)
+                return _coldClimateTolerance;
+            else
+                return 0;
+        }
+        set
+        {
+            _coldClimateTolerance = value;
+        }
+    } //How well the creature can handle cold parts of the map before needing to move to neutral
+    public float HotClimateTolerance
+    {
+        get
+        {
+            if (_hotClimateTolerance >= _coldClimateTolerance)
+                return _hotClimateTolerance;
+            else
+                return 0;
+        }
+        set
+        {
+            _hotClimateTolerance = value;
+        }
+    } //How well the creature can handle hot parts of the map before needing to move to neutral
+    public int TicksInHotClimate { get; set; }
+    public int TicksInColdClimate { get; set; }
+    public bool IsLeavingClimate { get; set; }
 
+    public const string CREATURE_TABLE_NAME = "Creatures";
+    public const string ANCESTORS_TABLE_NAME = "Ancestors";
     public const float EGG_INTERVAL_INIT_MIN = 400;
-    public const float EGG_INTERVAL_INIT_MAX = 800;
-    public const float EGG_INCUBATION_INIT_MIN = 300;
+    public const float EGG_INTERVAL_INIT_MAX = 500;
+    public const float EGG_INCUBATION_INIT_MIN = 400;
     public const float EGG_INCUBATION_INIT_MAX = 800;
     public const float FOOD_DIGESTION_INIT_MIN = 50;
     public const float FOOD_DIGESTION_INIT_MAX = 250;
@@ -90,26 +131,55 @@ public class Creature : SpriteBase
     public const float SPEED_INIT_MAX = 45;
     public const float LIFESPAN_INIT_MIN = 1000;
     public const float LIFESPAN_INIT_MAX = 1200;
-    public const float HERBAVORE_INIT_MIN = 3;
-    public const float HERBAVORE_INIT_MAX = 20;
+    public const float HERBAVORE_INIT_MIN = 1;
+    public const float HERBAVORE_INIT_MAX = 2;
     public const float COLD_TOLERANCE_INIT_MIN = 0;
     public const float COLD_TOLERANCE_INIT_MAX = 10;
     public const float HOT_TOLERANCE_INIT_MIN = 0;
-    public const float HOT_TOLERANCE_INIT_MAX = 5;
-    public const float ENERGY_INIT = 500;
+    public const float HOT_TOLERANCE_INIT_MAX = 10;
+    public const float ENERGY_INIT = 450;
+    public const int TICKS_BETWEEN_SIGHT_EVAL = 30;
+
+    //public const string CREATURE_TABLE_NAME = "Creatures";
+    //public const string ANCESTORS_TABLE_NAME = "Ancestors";
+    //public const float EGG_INTERVAL_INIT_MIN = 450;
+    //public const float EGG_INTERVAL_INIT_MAX = 450;
+    //public const float EGG_INCUBATION_INIT_MIN = 600;
+    //public const float EGG_INCUBATION_INIT_MAX = 600;
+    //public const float FOOD_DIGESTION_INIT_MIN = 100;
+    //public const float FOOD_DIGESTION_INIT_MAX = 100;
+    //public const float SPEED_INIT_MIN = 30;
+    //public const float SPEED_INIT_MAX = 30;
+    //public const float LIFESPAN_INIT_MIN = 1000;
+    //public const float LIFESPAN_INIT_MAX = 1000;
+    //public const float HERBAVORE_INIT_MIN = 1;
+    //public const float HERBAVORE_INIT_MAX = 2;
+    //public const float COLD_TOLERANCE_INIT_MIN = 5;
+    //public const float COLD_TOLERANCE_INIT_MAX = 5;
+    //public const float HOT_TOLERANCE_INIT_MIN = 5;
+    //public const float HOT_TOLERANCE_INIT_MAX = 5;
+    //public const float ENERGY_INIT = 500;
+    //public const int TICKS_BETWEEN_SIGHT_EVAL = 30;
 
     public Creature()
     {
         Ancestors = new List<string>();
+        AncestorIds = new List<int>();
+        DeathCause = String.Empty;
+        IsLeavingClimate = false;
     }
 
-    public void InitNewCreature(Random rand, ref Names names, int speciesId)
+    public void InitNewCreature(Random rand, ref Names names, int speciesId, ref int creatureIdCtr)
     {
+        creatureIdCtr++;
+        CreatureId = creatureIdCtr;
         IsAlive = true;
         IsChangingSpecies = false;
         NewSpeciesName = String.Empty;
         SpeciesId = speciesId;
         Species = names.GetRandomName(rand);
+        OriginalSpeciesId = SpeciesId;
+        OriginalSpecies = Species;
         SpeciesStrain = String.Empty;
         BabySpeciesStrainCounter = "A";
         Generation = 0;
@@ -130,6 +200,8 @@ public class Creature : SpriteBase
         Energy = ENERGY_INIT; //No mutations or variance on this
         ElapsedTicks = 0;
         Sight = 0;
+        TicksSinceLastVisionCheck = 0;
+        TicksBetweenVisionChecks = TICKS_BETWEEN_SIGHT_EVAL;
         Attraction = 0;
         Herbavore = rand.Next((int)HERBAVORE_INIT_MIN, (int)HERBAVORE_INIT_MAX);
         Carnivore = 0;
@@ -139,12 +211,17 @@ public class Creature : SpriteBase
         Cloning = 0;
         ColdClimateTolerance = rand.Next((int)COLD_TOLERANCE_INIT_MIN, (int)COLD_TOLERANCE_INIT_MAX);
         HotClimateTolerance = rand.Next((int)HOT_TOLERANCE_INIT_MIN, (int)HOT_TOLERANCE_INIT_MAX);
+        IsHerbavore = true;
+        TicksInColdClimate = 0;
+        TicksInHotClimate = 0;
     }
-    public void AdvanceTick()
+    public void AdvanceTick(Random rand)
     {
         ElapsedTicks++;
         TicksSinceLastEgg++;
-        if (UndigestedFood > 0) //only allow digestion once the a food has been eaten
+        TicksSinceLastVisionCheck++;
+
+        if (UndigestedFood > 0) //only allow digestion once a food has been eaten
             TicksSinceLastDigestedFood++;
 
         if (UndigestedFood > 0 && TicksSinceLastDigestedFood >= FoodDigestion)
@@ -153,8 +230,84 @@ public class Creature : SpriteBase
             UndigestedFood--;
             DigestedFood++;
         }
+
+        if (TicksInColdClimate > 0 && !IsInCold)
+            TicksInColdClimate = 0;
+        if (TicksInHotClimate > 0 && !IsInHot)
+            TicksInHotClimate = 0;
+
+        if (IsInCold)
+            TicksInColdClimate++;
+        if (IsInHot)
+            TicksInHotClimate++;
+
+        if (IsInCold && !IsLeavingClimate && TicksInColdClimate / 30.0 > ColdClimateTolerance)
+        {
+            //Move straight down to get out of the cold climate
+            int tmpRotation;
+            tmpRotation = rand.Next(170, 190);
+            Rotation = MathHelper.ToRadians(tmpRotation);
+            IsLeavingClimate = true;
+        }
+        else if (IsInHot && !IsLeavingClimate && TicksInHotClimate / 30.0 > HotClimateTolerance)
+        {
+            //Move straight up to get out of the hot climate
+            int tmpRotation;
+
+            if (rand.Next(0, 100) > 50)
+            {
+                tmpRotation = rand.Next(0, 10);
+            }
+            else
+            {
+                tmpRotation = rand.Next(350, 360);
+            }
+                
+            Rotation = MathHelper.ToRadians(tmpRotation);
+            IsLeavingClimate = true;
+        }
+        else if(IsLeavingClimate)
+        {
+            //Check if we are out of the climate to change the rotation back
+            if (!IsInCold && !IsInHot)
+            {
+                IsLeavingClimate = false;
+                int tmpRotation;
+
+                if (MathHelper.ToDegrees(Rotation) >= 170 && MathHelper.ToDegrees(Rotation) <= 190) //Cold
+                {
+                    if (_coldClimateTolerance >= _hotClimateTolerance)
+                    {
+                        tmpRotation = rand.Next(0, 360);
+                    }
+                    else
+                    {
+                        tmpRotation = rand.Next(91, 269);
+                    }
+
+                    Rotation = MathHelper.ToRadians(tmpRotation);
+                }
+                else //Hot
+                {
+                    if (_hotClimateTolerance >= _coldClimateTolerance)
+                    {
+                        tmpRotation = rand.Next(0, 360); //If we are a hot climate species let us randomly rotate back into the hot
+                    }
+                    else
+                    {
+                        tmpRotation = rand.Next(1, 89);
+                        if (rand.Next(0, 100) > 50)
+                        {
+                            tmpRotation = tmpRotation * -1;
+                        }
+                    }
+
+                    Rotation = MathHelper.ToRadians(tmpRotation);
+                }
+            }
+        }
     }
-    public Egg LayEgg(Random rand, ref Names names, List<Creature> gameDataCreatureList)
+    public Egg LayEgg(Random rand, ref Names names, List<Creature> gameDataCreatureList, ref int creatureIdCtr)
     {
         Egg egg = new Egg();
         Creature baby = new Creature();
@@ -162,7 +315,10 @@ public class Creature : SpriteBase
         TicksSinceLastEgg = 0;
         EggsCreated++;
 
+        creatureIdCtr++;
+        baby.CreatureId = creatureIdCtr;
         baby.Ancestors = CopyAncestorList(Ancestors);
+        baby.AncestorIds = CopyAncestorIdsList(AncestorIds);
         baby.IsAlive = true;
         baby.IsChangingSpecies = false;
         baby.NewSpeciesId = -1;
@@ -171,6 +327,8 @@ public class Creature : SpriteBase
         baby.Position = Position;
         baby.SpeciesId = SpeciesId;
         baby.Species = Species;
+        baby.OriginalSpecies = OriginalSpecies;
+        baby.OriginalSpeciesId = OriginalSpeciesId;
         baby.BabySpeciesStrainCounter = "A";
         baby.Generation = Generation + 1;
         baby.UndigestedFood = 0;
@@ -179,6 +337,12 @@ public class Creature : SpriteBase
         baby.TicksSinceLastDigestedFood = 0;
         baby.TicksSinceLastEgg = 0;
         baby.ElapsedTicks = 0;
+        baby.Energy = ENERGY_INIT; //No mutation chance on energy
+        baby.TicksSinceLastVisionCheck = 0;
+        baby.TicksBetweenVisionChecks = TicksBetweenVisionChecks;
+        baby.TicksInColdClimate = 0;
+        baby.TicksInHotClimate = 0;
+        baby.IsLeavingClimate = false;
 
         //Mutations
         baby.EggCamo = EggCamo + Mutation(rand, 5);
@@ -188,22 +352,50 @@ public class Creature : SpriteBase
         baby.FoodDigestion = FoodDigestion + (Mutation(rand, 25) * 10);
         baby.Speed = Speed + Mutation(rand, 10);
         baby.Lifespan = Lifespan + (Mutation(rand, 25) * 10);
-        baby.Energy = Energy; //No mutation chance on energy
         baby.Sight = Sight + Mutation(rand, 3);
         baby.Attraction = Attraction + Mutation(rand, 3);
         baby.Camo = Camo + Mutation(rand, 3);
         baby.Cloning = Cloning + Mutation(rand, 3);
-        baby.ColdClimateTolerance = ColdClimateTolerance + Mutation(rand, 10 - HotClimateTolerance);
-        baby.HotClimateTolerance = HotClimateTolerance + Mutation(rand, 10 - ColdClimateTolerance);
+        baby.ColdClimateTolerance = _coldClimateTolerance + Mutation(rand, 15 - _hotClimateTolerance);
+        baby.HotClimateTolerance = _hotClimateTolerance + Mutation(rand, 15 - _coldClimateTolerance);
         baby.Herbavore = Herbavore + Mutation(rand, 15);
         baby.Carnivore = Carnivore + Mutation(rand, 10);
         baby.Omnivore = Omnivore + Mutation(rand, 5);
         baby.Scavenger = Scavenger + Mutation(rand, 5);
 
+        if (baby.Herbavore >= baby.Carnivore && baby.Herbavore >= baby.Scavenger && baby.Herbavore >= baby.Omnivore)
+        {
+            baby.IsHerbavore = true;
+            baby.IsCarnivore = false;
+            baby.IsScavenger = false;
+            baby.IsOmnivore = false;
+        }
+        else if (baby.Carnivore >= baby.Herbavore && baby.Carnivore >= baby.Scavenger && baby.Carnivore >= baby.Omnivore)
+        {
+            baby.IsHerbavore = false;
+            baby.IsCarnivore = true;
+            baby.IsScavenger = false;
+            baby.IsOmnivore = false;
+        }
+        else if (baby.Scavenger >= baby.Herbavore && baby.Scavenger >= baby.Carnivore && baby.Scavenger >= baby.Omnivore)
+        {
+            baby.IsHerbavore = false;
+            baby.IsCarnivore = false;
+            baby.IsScavenger = true;
+            baby.IsOmnivore = false;
+        }
+        else if (baby.Omnivore >= baby.Herbavore && baby.Omnivore >= baby.Carnivore && baby.Omnivore >= baby.Scavenger)
+        {
+            baby.IsHerbavore = true;
+            baby.IsCarnivore = true;
+            baby.IsScavenger = false;
+            baby.IsOmnivore = true;
+        }
+
         //Only iterate the Species/Strain if something that can Mutate has changed
         if (!IsSameAs(baby))
         {
-            if (IsChangingSpecies || SpeciesStrain.Replace(" ", "").Length > 20) //New Species once the Strain goes past 20 different strains
+            if (IsChangingSpecies || SpeciesStrain.Replace(" ", "").Length > 50) //New Species once the Strain goes past 50 different strains
             {
                 if (!IsChangingSpecies)
                 {
@@ -212,10 +404,12 @@ public class Creature : SpriteBase
                     IsChangingSpecies = true;
                 }
                 baby.Ancestors.Add(Species);
+                baby.AncestorIds.Add(SpeciesId);
                 baby.Species = NewSpeciesName;
                 baby.SpeciesId = NewSpeciesId;
                 baby.SpeciesStrain = BabySpeciesStrainCounter;
 
+                #region RomanNumerals
                 ///Roman Numeral at the end of Species name does not work
                 //int romanNumeralIndex = baby.Species.IndexOf(' ');
                 //if (romanNumeralIndex > 0) //Increment Roman numeral of we Detect a space
@@ -229,6 +423,7 @@ public class Creature : SpriteBase
                 //{
                 //    baby.Species = baby.Species + " II";
                 //}
+                #endregion
             }
             else
             {
@@ -261,7 +456,10 @@ public class Creature : SpriteBase
         }
         else
         {
-            info.Add("Strain: " + SpeciesStrain.Replace(" ", ""));
+            if(SpeciesStrain.Replace(" ", "").Length > 20)
+                info.Add("Strain: " + SpeciesStrain.Replace(" ", "").Substring(0,20) + "... (" + SpeciesStrain.Replace(" ", "").Length + ")");
+            else
+                info.Add("Strain: " + SpeciesStrain.Replace(" ", ""));
         }
         if (Ancestors.Count > 0)
         {
@@ -307,15 +505,110 @@ public class Creature : SpriteBase
         info.Add("Sight: " + Sight);
         info.Add("Camo: " + Camo);
         info.Add("Cloning: " + Cloning);
-        info.Add("Cold Tolerance: " + ColdClimateTolerance);
-        info.Add("Hot Tolerance: " + HotClimateTolerance);
+        info.Add("Cold Tolerance: " + _coldClimateTolerance);
+        info.Add("Hot Tolerance: " + _hotClimateTolerance);
         info.Add(" ");
         info.Add("Species ID: " + SpeciesId);
         info.Add("Position: {X:" + ((int)Position.X).ToString().PadLeft(4, ' ') + ", Y:" + ((int)Position.Y).ToString().PadLeft(4, ' '));
         info.Add("Direction: " + Direction);
-        info.Add("Rotation: " + Rotation);
+        info.Add("Rotation: " + Rotation + " :: " + MathHelper.ToDegrees(Rotation));
 
         return info;
+    }
+    public List<string> GetCreatureStatisticsSQL(int seed, int sessionID, float creatureRatio, float foodRatio, double gameTimeMinutes)
+    {
+        List<string> sqlStatements = new List<string>();
+
+        string creatureSql = String.Empty;
+
+        creatureSql += "Insert into " + CREATURE_TABLE_NAME + " (" +
+            "RunTime," +
+            "GameSeed," +
+            "SessionID," +
+            "MapSize," +
+            "CreatureRatio," +
+            "FoodRatio," +
+            "IsAlive," +
+            "DeathCause," +
+            "CreatureID," +
+            "CreatureName," +
+            "SpeciesID," +
+            "SpeciesName," +
+            "SpeciesStrain," +
+            "OriginalSpeciesID," +
+            "OriginalSpeciesName," +
+            "Generation," +
+            "FoodDigestionRate," +
+            "EggInterval," +
+            "EggIncubation," +
+            "EggCamo," +
+            "EggToxicity," +
+            "EggsCreatedTotal," +
+            "Speed," +
+            "LifeSpan," +
+            "Sight," +
+            "Attraction," +
+            "Camo," +
+            "Cloning," +
+            "Herbavore," +
+            "Carnivore," +
+            "Omnivore," +
+            "Scavenger," +
+            "ColdClimateTolerance," +
+            "HotClimateTolerance) Values (";
+        creatureSql += Math.Round(gameTimeMinutes,4) + ",";
+        creatureSql += seed + ",";
+        creatureSql += sessionID + ",";
+        creatureSql += Global.WORLD_SIZE + ",";
+        creatureSql += Math.Round(creatureRatio, 10) + ",";
+        creatureSql += Math.Round(foodRatio, 10) + ",";
+        creatureSql += "'" + IsAlive + "',";
+        creatureSql += "'" + DeathCause + "',";
+        creatureSql += CreatureId + ",";
+        creatureSql += "'" + CreatureId + "',"; //At the momemnt we do not carry an individual creature name. Just use the ID for now
+        creatureSql += SpeciesId + ",";
+        creatureSql += "'" + Species + "',";
+        creatureSql += "'" + SpeciesStrain + "',";
+        creatureSql += OriginalSpeciesId + ",";
+        creatureSql += "'" + OriginalSpecies + "',";
+        creatureSql += Generation + ",";
+        creatureSql += Math.Round(FoodDigestion, 4) + ",";
+        creatureSql += Math.Round(EggInterval, 4) + ",";
+        creatureSql += Math.Round(EggIncubation, 4) + ",";
+        creatureSql += Math.Round(EggCamo, 4) + ",";
+        creatureSql += Math.Round(EggToxicity, 4) + ",";
+        creatureSql += EggsCreated + ",";
+        creatureSql += Math.Round(Speed, 4) + ",";
+        creatureSql += Math.Round(Lifespan, 4) + ",";
+        creatureSql += Math.Round(Sight, 4) + ",";
+        creatureSql += Math.Round(Attraction, 4) + ",";
+        creatureSql += Math.Round(Camo, 4) + ",";
+        creatureSql += Math.Round(Cloning, 4) + ",";
+        creatureSql += Math.Round(Herbavore, 4) + ",";
+        creatureSql += Math.Round(Carnivore, 4) + ",";
+        creatureSql += Math.Round(Omnivore, 4) + ",";
+        creatureSql += Math.Round(Scavenger, 4) + ",";
+        creatureSql += Math.Round(ColdClimateTolerance, 4) + ",";
+        creatureSql += Math.Round(HotClimateTolerance, 4);
+        creatureSql += ")";
+
+        sqlStatements.Add(creatureSql);
+
+        for (int i = 0; i < AncestorIds.Count; i++)
+        {
+            string ancestorSQL = String.Empty;
+
+            ancestorSQL += "Insert into " + ANCESTORS_TABLE_NAME + "(SessionID,CreatureID,AncestorID,AncestorName) Values (";
+            ancestorSQL += sessionID + ",";
+            ancestorSQL += CreatureId + ",";
+            ancestorSQL += AncestorIds[i] + ",";
+            ancestorSQL += "'" + Ancestors[i] + "'";
+            ancestorSQL += ")";
+
+            sqlStatements.Add(ancestorSQL);
+        }
+
+        return sqlStatements;
     }
 
     //Helper functions
@@ -392,6 +685,17 @@ public class Creature : SpriteBase
     private List<string> CopyAncestorList(List<string> toCopyList)
     {
         List<string> newList = new List<string>();
+
+        for (int i = 0; i < toCopyList.Count; i++)
+        {
+            newList.Add(toCopyList[i]);
+        }
+
+        return newList;
+    }
+    private List<int> CopyAncestorIdsList(List<int> toCopyList)
+    {
+        List<int> newList = new List<int>();
 
         for (int i = 0; i < toCopyList.Count; i++)
         {

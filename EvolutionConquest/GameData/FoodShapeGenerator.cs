@@ -21,7 +21,7 @@ public class FoodShapeGenerator
         texture = new Texture2D(device, IMAGE_WIDTH, IMAGE_HEIGHT);
         Color[] colors = new Color[IMAGE_WIDTH * IMAGE_HEIGHT];
 
-        Color foodColor = Color.Black;
+        Color foodColor = Color.DarkGreen;
 
         List<Color> colorList = new List<Color>();
         //Layer1

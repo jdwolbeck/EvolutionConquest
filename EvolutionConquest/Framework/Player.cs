@@ -32,5 +32,9 @@ public class Player
         {
             gameData.ShowCreatureStats = !gameData.ShowCreatureStats;
         }
+        if (inputState.IsNewKeyPress(Keys.F9, controllingPlayer, out playerIndex))
+        {
+            gameData.ShowFoodStrength = !gameData.ShowFoodStrength;
+        }
     }
 }
